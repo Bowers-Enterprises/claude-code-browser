@@ -5,6 +5,16 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-02-03
+
+### Added
+- **Commands Section**: New panel with curated Claude Code commands and prompts
+  - CLI Flags: `--dangerously-skip-permissions`, `--print`, `--verbose`, `--model`, `--resume`, `--continue`
+  - Slash Commands: `/clear`, `/compact`, `/cost`, `/doctor`, `/help`, `/init`, `/memory`, `/model`, `/permissions`, `/review`, `/vim`, `/config`, `/status`, `/bug`
+  - Quick Prompts: Run Autonomously, Fix All Errors, Write Tests, Explain Code, Refactor, Add Types, Security Review, Optimize, Add Docs, Commit, Create PR, Debug
+- Click any command to copy it to clipboard
+- Search/filter works across commands too
+
 ## [0.2.0] - 2025-02-03
 
 ### Added

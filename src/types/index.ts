@@ -100,3 +100,26 @@ export interface FolderState {
   /** Assignments of items to folders by resource type */
   assignments: Record<ResourceType, FolderAssignments>;
 }
+
+/**
+ * Category for organizing Claude Code commands
+ */
+export type CommandCategory = 'cli-flags' | 'slash-commands' | 'prompts';
+
+/**
+ * Definition for a Claude Code command or prompt
+ */
+export interface CommandDefinition {
+  /** Unique identifier */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Brief description */
+  description: string;
+  /** The actual command or prompt text to copy */
+  copyText: string;
+  /** Category of this command */
+  category: CommandCategory;
+  /** Icon to display */
+  icon?: string;
+}

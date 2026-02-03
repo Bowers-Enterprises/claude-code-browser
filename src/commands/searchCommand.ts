@@ -3,6 +3,7 @@ import { SkillsProvider } from '../providers/skillsProvider';
 import { AgentsProvider } from '../providers/agentsProvider';
 import { McpProvider } from '../providers/mcpProvider';
 import { PluginsProvider } from '../providers/pluginsProvider';
+import { CommandsProvider } from '../providers/commandsProvider';
 
 /**
  * Interface for all providers that need to be filtered
@@ -12,6 +13,7 @@ interface Providers {
   agents: AgentsProvider;
   mcp: McpProvider;
   plugins: PluginsProvider;
+  commands?: CommandsProvider;
 }
 
 /**
@@ -29,6 +31,7 @@ function clearAllFilters(providers: Providers): void {
   providers.agents.setFilter('');
   providers.mcp.setFilter('');
   providers.plugins.setFilter('');
+  providers.commands?.setFilter('');
   setFilterActiveContext(false);
 }
 
@@ -61,6 +64,7 @@ export function registerSearchCommand(
       providers.agents.setFilter(query);
       providers.mcp.setFilter(query);
       providers.plugins.setFilter(query);
+      providers.commands?.setFilter(query);
 
       // Update context for clear button visibility
       setFilterActiveContext(query.length > 0);

@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -59,6 +59,10 @@
         {
           "id": "claudeCodeBrowser.plugins",
           "name": "Plugins"
+        },
+        {
+          "id": "claudeCodeBrowser.commands",
+          "name": "Commands"
         }
       ]
     },
@@ -102,6 +106,10 @@
       {
         "command": "claudeCodeBrowser.moveToRoot",
         "title": "Move to Root"
+      },
+      {
+        "command": "claudeCodeBrowser.copyCommand",
+        "title": "Copy Command"
       }
     ],
     "menus": {
@@ -128,7 +136,7 @@
         },
         {
           "command": "claudeCodeBrowser.refresh",
-          "when": "view =~ /claudeCodeBrowser\\./",
+          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands",
           "group": "navigation@2"
         },
         {

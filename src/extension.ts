@@ -3,6 +3,7 @@ import { SkillsProvider } from './providers/skillsProvider';
 import { AgentsProvider } from './providers/agentsProvider';
 import { McpProvider } from './providers/mcpProvider';
 import { PluginsProvider } from './providers/pluginsProvider';
+import { CommandsProvider, registerCopyCommand } from './providers/commandsProvider';
 import { FolderManager } from './services/folderManager';
 import {
   registerInvokeCommand,
@@ -24,6 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const agentsProvider = new AgentsProvider(folderManager);
     const mcpProvider = new McpProvider(folderManager);
     const pluginsProvider = new PluginsProvider(folderManager);
+    const commandsProvider = new CommandsProvider();
 
     // Create tree views with drag-and-drop support
     const skillsTreeView = skillsProvider.createTreeView();
@@ -31,12 +33,18 @@ export function activate(context: vscode.ExtensionContext): void {
     const mcpTreeView = mcpProvider.createTreeView();
     const pluginsTreeView = pluginsProvider.createTreeView();
 
+    // Register commands tree view (no drag-and-drop needed)
+    const commandsTreeView = vscode.window.createTreeView('claudeCodeBrowser.commands', {
+      treeDataProvider: commandsProvider
+    });
+
     // Register tree views for disposal
     context.subscriptions.push(
       skillsTreeView,
       agentsTreeView,
       mcpTreeView,
-      pluginsTreeView
+      pluginsTreeView,
+      commandsTreeView
     );
 
     // Register commands
@@ -44,13 +52,15 @@ export function activate(context: vscode.ExtensionContext): void {
       skills: skillsProvider,
       agents: agentsProvider,
       mcp: mcpProvider,
-      plugins: pluginsProvider
+      plugins: pluginsProvider,
+      commands: commandsProvider
     };
     registerRefreshCommand(context, providers);
     registerInvokeCommand(context);
     registerSearchCommand(context, providers);
     registerClearFilterCommand(context, providers);
     registerFolderCommands(context, folderManager);
+    registerCopyCommand(context);
 
     console.log('Claude Code Browser activated successfully');
   } catch (error) {
