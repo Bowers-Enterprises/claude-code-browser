@@ -1,0 +1,108 @@
+{
+  "name": "claude-code-browser",
+  "displayName": "Claude Code Browser",
+  "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
+  "version": "0.1.0",
+  "publisher": "chase-bowers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bowers-Enterprises/claude-code-browser.git"
+  },
+  "homepage": "https://github.com/Bowers-Enterprises/claude-code-browser#readme",
+  "bugs": {
+    "url": "https://github.com/Bowers-Enterprises/claude-code-browser/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai",
+    "skills",
+    "agents",
+    "mcp"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claude-code-browser",
+          "title": "Claude Code Browser",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "claude-code-browser": [
+        {
+          "id": "claudeCodeBrowser.skills",
+          "name": "Skills"
+        },
+        {
+          "id": "claudeCodeBrowser.agents",
+          "name": "Agents"
+        },
+        {
+          "id": "claudeCodeBrowser.mcpServers",
+          "name": "MCP Servers"
+        },
+        {
+          "id": "claudeCodeBrowser.plugins",
+          "name": "Plugins"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "claudeCodeBrowser.invokeResource",
+        "title": "Invoke Resource"
+      },
+      {
+        "command": "claudeCodeBrowser.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.search",
+        "title": "Search",
+        "icon": "$(search)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeCodeBrowser.refresh",
+          "when": "view =~ /claudeCodeBrowser\\./",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeCodeBrowser.search",
+          "when": "view =~ /claudeCodeBrowser\\./",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.0.0"
+  }
+}
