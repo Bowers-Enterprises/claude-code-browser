@@ -10,8 +10,8 @@ import { FolderItem } from '../providers/folderItem';
 /**
  * Get resource type from a view ID
  */
-function getResourceTypeFromViewId(viewId?: string): ResourceType | undefined {
-  if (!viewId) return undefined;
+function getResourceTypeFromViewId(viewId?: unknown): ResourceType | undefined {
+  if (!viewId || typeof viewId !== 'string') return undefined;
   if (viewId.includes('skills')) return 'skill';
   if (viewId.includes('agents')) return 'agent';
   if (viewId.includes('mcpServers')) return 'mcp';
@@ -66,8 +66,8 @@ export function registerFolderCommands(
 ): void {
   // Create folder command
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeCodeBrowser.createFolder', async (viewId?: string) => {
-      let resourceType = getResourceTypeFromViewId(viewId);
+    vscode.commands.registerCommand('claudeCodeBrowser.createFolder', async (arg?: unknown) => {
+      let resourceType = getResourceTypeFromViewId(arg);
 
       // If no view ID, ask user to select section
       if (!resourceType) {

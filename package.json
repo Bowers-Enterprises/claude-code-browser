@@ -108,7 +108,22 @@
       "view/title": [
         {
           "command": "claudeCodeBrowser.createFolder",
-          "when": "view =~ /claudeCodeBrowser\\./",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.createFolder",
+          "when": "view == claudeCodeBrowser.agents",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.createFolder",
+          "when": "view == claudeCodeBrowser.mcpServers",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.createFolder",
+          "when": "view == claudeCodeBrowser.plugins",
           "group": "navigation@1"
         },
         {
