@@ -6,3 +6,4 @@
 export { registerInvokeCommand } from './invokeCommand';
 export { registerRefreshCommand } from './refreshCommand';
 export { registerSearchCommand, registerClearFilterCommand } from './searchCommand';
+export { registerFolderCommands } from './folderCommands';

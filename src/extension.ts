@@ -3,24 +3,40 @@ import { SkillsProvider } from './providers/skillsProvider';
 import { AgentsProvider } from './providers/agentsProvider';
 import { McpProvider } from './providers/mcpProvider';
 import { PluginsProvider } from './providers/pluginsProvider';
-import { registerInvokeCommand, registerRefreshCommand, registerSearchCommand, registerClearFilterCommand } from './commands';
+import { FolderManager } from './services/folderManager';
+import {
+  registerInvokeCommand,
+  registerRefreshCommand,
+  registerSearchCommand,
+  registerClearFilterCommand,
+  registerFolderCommands
+} from './commands';
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Claude Code Browser activating...');
 
   try {
-    // Create providers
-    const skillsProvider = new SkillsProvider();
-    const agentsProvider = new AgentsProvider();
-    const mcpProvider = new McpProvider();
-    const pluginsProvider = new PluginsProvider();
+    // Create folder manager for virtual folder organization
+    const folderManager = new FolderManager(context);
 
-    // Register tree data providers
+    // Create providers with folder manager
+    const skillsProvider = new SkillsProvider(folderManager);
+    const agentsProvider = new AgentsProvider(folderManager);
+    const mcpProvider = new McpProvider(folderManager);
+    const pluginsProvider = new PluginsProvider(folderManager);
+
+    // Create tree views with drag-and-drop support
+    const skillsTreeView = skillsProvider.createTreeView();
+    const agentsTreeView = agentsProvider.createTreeView();
+    const mcpTreeView = mcpProvider.createTreeView();
+    const pluginsTreeView = pluginsProvider.createTreeView();
+
+    // Register tree views for disposal
     context.subscriptions.push(
-      vscode.window.registerTreeDataProvider('claudeCodeBrowser.skills', skillsProvider),
-      vscode.window.registerTreeDataProvider('claudeCodeBrowser.agents', agentsProvider),
-      vscode.window.registerTreeDataProvider('claudeCodeBrowser.mcpServers', mcpProvider),
-      vscode.window.registerTreeDataProvider('claudeCodeBrowser.plugins', pluginsProvider)
+      skillsTreeView,
+      agentsTreeView,
+      mcpTreeView,
+      pluginsTreeView
     );
 
     // Register commands
@@ -34,6 +50,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerInvokeCommand(context);
     registerSearchCommand(context, providers);
     registerClearFilterCommand(context, providers);
+    registerFolderCommands(context, folderManager);
 
     console.log('Claude Code Browser activated successfully');
   } catch (error) {

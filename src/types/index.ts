@@ -69,3 +69,34 @@ export interface PluginMetadata {
   marketplace?: string;
   installedAt?: string;
 }
+
+/**
+ * Virtual folder definition for organizing resources
+ */
+export interface VirtualFolder {
+  /** Unique identifier for the folder */
+  id: string;
+  /** Display name of the folder */
+  name: string;
+  /** The resource type this folder belongs to */
+  resourceType: ResourceType;
+}
+
+/**
+ * Mapping of item file paths to folder IDs
+ * Key: filePath of the resource item
+ * Value: folderId (or undefined for root level)
+ */
+export type FolderAssignments = Record<string, string>;
+
+/**
+ * Complete folder state for persistence
+ */
+export interface FolderState {
+  /** Version for future migrations */
+  version: number;
+  /** All defined folders by resource type */
+  folders: Record<ResourceType, VirtualFolder[]>;
+  /** Assignments of items to folders by resource type */
+  assignments: Record<ResourceType, FolderAssignments>;
+}

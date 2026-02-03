@@ -1,8 +1,20 @@
+/**
+ * TreeDataProvider for Claude Code agents.
+ *
+ * Scans ~/.claude/agents/ for agent .md files and displays them
+ * in the VS Code tree view with virtual folder organization.
+ */
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
 import { ResourceItem, ResourceScope, AgentMetadata } from '../types';
 import { parseAgentsDirectory } from '../parsers/agentParser';
+import { FolderManager } from '../services/folderManager';
+import { FolderItem, isFolderItem } from './folderItem';
+
+/** Union type for all tree items in the agents view */
+export type AgentTreeItem = AgentItem | FolderItem;
 
 /**
  * Tree item representing an agent in the Claude Code Browser.
@@ -13,6 +25,7 @@ export class AgentItem extends vscode.TreeItem implements ResourceItem {
   public readonly resourceDescription: string;
   public readonly scope: ResourceScope = 'global';
   public readonly resourceType = 'agent' as const;
+  public readonly itemType = 'agent' as const;
   public readonly filePath: string;
   public readonly invokeCommand: string;
   public readonly model?: string;
@@ -73,21 +86,51 @@ export class AgentItem extends vscode.TreeItem implements ResourceItem {
 }
 
 /**
- * TreeDataProvider for Claude Code agents.
- *
- * Scans ~/.claude/agents/ for agent .md files and displays them
- * in the VS Code tree view. Agents are always global scope.
+ * Type guard for AgentItem
  */
-export class AgentsProvider implements vscode.TreeDataProvider<AgentItem> {
-  private _onDidChangeTreeData = new vscode.EventEmitter<AgentItem | undefined | null | void>();
+export function isAgentItem(item: unknown): item is AgentItem {
+  return item instanceof AgentItem;
+}
+
+/**
+ * TreeDataProvider for Claude Code agents with virtual folder support.
+ */
+export class AgentsProvider implements
+  vscode.TreeDataProvider<AgentTreeItem>,
+  vscode.TreeDragAndDropController<AgentTreeItem> {
+
+  // Drag and drop MIME types
+  readonly dropMimeTypes = ['application/vnd.code.tree.claudecodebrowser.agents'];
+  readonly dragMimeTypes = ['application/vnd.code.tree.claudecodebrowser.agents'];
+
+  private _onDidChangeTreeData = new vscode.EventEmitter<AgentTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private agents: AgentItem[] = [];
   private filterText: string = '';
+  private treeView?: vscode.TreeView<AgentTreeItem>;
 
-  constructor() {
+  constructor(private folderManager: FolderManager) {
+    // Listen for folder changes
+    this.folderManager.onDidChange(type => {
+      if (type === 'agent') {
+        this._onDidChangeTreeData.fire();
+      }
+    });
     // Load agents on initialization
     this.loadAgents();
+  }
+
+  /**
+   * Create and return the tree view with drag-and-drop support
+   */
+  createTreeView(): vscode.TreeView<AgentTreeItem> {
+    this.treeView = vscode.window.createTreeView('claudeCodeBrowser.agents', {
+      treeDataProvider: this,
+      dragAndDropController: this,
+      canSelectMany: true
+    });
+    return this.treeView;
   }
 
   /**
@@ -95,7 +138,7 @@ export class AgentsProvider implements vscode.TreeDataProvider<AgentItem> {
    */
   setFilter(text: string): void {
     this.filterText = text.toLowerCase();
-    this.refresh();
+    this._onDidChangeTreeData.fire();
   }
 
   /**
@@ -103,7 +146,7 @@ export class AgentsProvider implements vscode.TreeDataProvider<AgentItem> {
    */
   clearFilter(): void {
     this.filterText = '';
-    this.refresh();
+    this._onDidChangeTreeData.fire();
   }
 
   /**
@@ -121,55 +164,123 @@ export class AgentsProvider implements vscode.TreeDataProvider<AgentItem> {
 
     try {
       const metadata = await parseAgentsDirectory(globalAgentsPath);
-
-      // Sort agents alphabetically by name
       metadata.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Convert metadata to tree items
       this.agents = metadata.map(m => new AgentItem(m));
     } catch (error) {
       console.warn('Failed to load agents:', error);
       this.agents = [];
     }
 
-    // Notify the tree view that data has changed
     this._onDidChangeTreeData.fire();
   }
 
   /**
    * Get tree item representation for an element.
    */
-  getTreeItem(element: AgentItem): vscode.TreeItem {
+  getTreeItem(element: AgentTreeItem): vscode.TreeItem {
     return element;
   }
 
   /**
-   * Get children of an element. Since agents have no hierarchy,
-   * this returns all agents for the root and empty array for items.
+   * Get children with folder hierarchy support.
    */
-  getChildren(element?: AgentItem): Thenable<AgentItem[]> {
-    if (element) {
-      // Agents have no children
-      return Promise.resolve([]);
-    }
+  getChildren(element?: AgentTreeItem): Thenable<AgentTreeItem[]> {
+    // Root level: return folders + unassigned items
+    if (!element) {
+      const folders = this.folderManager.getFolders('agent');
+      const result: AgentTreeItem[] = [];
 
-    // Apply filter if set
-    let filteredAgents = this.agents;
-    if (this.filterText) {
-      filteredAgents = this.agents.filter(item =>
-        item.name.toLowerCase().includes(this.filterText) ||
-        item.resourceDescription.toLowerCase().includes(this.filterText)
+      // Add folders first (sorted alphabetically)
+      const sortedFolders = [...folders].sort((a, b) => a.name.localeCompare(b.name));
+      for (const folder of sortedFolders) {
+        const itemsInFolder = this.agents.filter(
+          a => this.folderManager.getFolderForItem('agent', a.filePath) === folder.id
+        );
+        // Apply filter to folder
+        if (this.filterText) {
+          const folderMatches = folder.name.toLowerCase().includes(this.filterText);
+          const hasMatchingItems = itemsInFolder.some(item =>
+            item.name.toLowerCase().includes(this.filterText) ||
+            item.resourceDescription.toLowerCase().includes(this.filterText)
+          );
+          if (!folderMatches && !hasMatchingItems) {
+            continue;
+          }
+        }
+        result.push(new FolderItem(folder, 'agent', itemsInFolder.length));
+      }
+
+      // Add unassigned items
+      const unassignedAgents = this.agents.filter(
+        a => !this.folderManager.getFolderForItem('agent', a.filePath)
       );
+      const filteredUnassigned = this.applyFilter(unassignedAgents);
+      result.push(...filteredUnassigned.sort((a, b) => a.name.localeCompare(b.name)));
+
+      return Promise.resolve(result);
     }
 
-    // Return filtered agents for root
-    return Promise.resolve(filteredAgents);
+    // Folder children: return items assigned to this folder
+    if (isFolderItem(element)) {
+      const folderAgents = this.agents.filter(
+        a => this.folderManager.getFolderForItem('agent', a.filePath) === element.folder.id
+      );
+      const filteredAgents = this.applyFilter(folderAgents);
+      return Promise.resolve(filteredAgents.sort((a, b) => a.name.localeCompare(b.name)));
+    }
+
+    // Agent items have no children
+    return Promise.resolve([]);
   }
 
   /**
-   * Get parent of an element. Agents have no hierarchy so always returns undefined.
+   * Handle drag start
    */
-  getParent(_element: AgentItem): vscode.ProviderResult<AgentItem> {
-    return undefined;
+  handleDrag(
+    source: readonly AgentTreeItem[],
+    dataTransfer: vscode.DataTransfer,
+    _token: vscode.CancellationToken
+  ): void {
+    const agentItems = source.filter(isAgentItem);
+    if (agentItems.length > 0) {
+      const filePaths = agentItems.map(a => a.filePath);
+      dataTransfer.set(
+        'application/vnd.code.tree.claudecodebrowser.agents',
+        new vscode.DataTransferItem(filePaths)
+      );
+    }
+  }
+
+  /**
+   * Handle drop
+   */
+  async handleDrop(
+    target: AgentTreeItem | undefined,
+    dataTransfer: vscode.DataTransfer,
+    _token: vscode.CancellationToken
+  ): Promise<void> {
+    const transferItem = dataTransfer.get('application/vnd.code.tree.claudecodebrowser.agents');
+    if (!transferItem) return;
+
+    const filePaths: string[] = transferItem.value;
+    if (!filePaths || filePaths.length === 0) return;
+
+    let targetFolderId: string | undefined;
+    if (isFolderItem(target)) {
+      targetFolderId = target.folder.id;
+    }
+
+    await this.folderManager.assignItemsToFolder('agent', filePaths, targetFolderId);
+  }
+
+  /**
+   * Apply filter to agent items
+   */
+  private applyFilter(items: AgentItem[]): AgentItem[] {
+    if (!this.filterText) return items;
+    return items.filter(item =>
+      item.name.toLowerCase().includes(this.filterText) ||
+      item.resourceDescription.toLowerCase().includes(this.filterText)
+    );
   }
 }

@@ -81,24 +81,72 @@
         "command": "claudeCodeBrowser.clearFilter",
         "title": "Clear Filter",
         "icon": "$(close)"
+      },
+      {
+        "command": "claudeCodeBrowser.createFolder",
+        "title": "New Folder",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "claudeCodeBrowser.renameFolder",
+        "title": "Rename Folder"
+      },
+      {
+        "command": "claudeCodeBrowser.deleteFolder",
+        "title": "Delete Folder"
+      },
+      {
+        "command": "claudeCodeBrowser.moveToFolder",
+        "title": "Move to Folder..."
+      },
+      {
+        "command": "claudeCodeBrowser.moveToRoot",
+        "title": "Move to Root"
       }
     ],
     "menus": {
       "view/title": [
         {
+          "command": "claudeCodeBrowser.createFolder",
+          "when": "view =~ /claudeCodeBrowser\\./",
+          "group": "navigation@1"
+        },
+        {
           "command": "claudeCodeBrowser.refresh",
           "when": "view =~ /claudeCodeBrowser\\./",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "claudeCodeBrowser.clearFilter",
           "when": "view =~ /claudeCodeBrowser\\./ && claudeCodeBrowser.filterActive",
-          "group": "navigation"
+          "group": "navigation@3"
         },
         {
           "command": "claudeCodeBrowser.search",
           "when": "view =~ /claudeCodeBrowser\\./",
-          "group": "navigation"
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "claudeCodeBrowser.renameFolder",
+          "when": "viewItem == folder",
+          "group": "1_folder@1"
+        },
+        {
+          "command": "claudeCodeBrowser.deleteFolder",
+          "when": "viewItem == folder",
+          "group": "1_folder@2"
+        },
+        {
+          "command": "claudeCodeBrowser.moveToFolder",
+          "when": "viewItem == skill || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "group": "2_move@1"
+        },
+        {
+          "command": "claudeCodeBrowser.moveToRoot",
+          "when": "viewItem == skill || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "group": "2_move@2"
         }
       ]
     }
