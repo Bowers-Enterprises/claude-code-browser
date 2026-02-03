@@ -33,9 +33,10 @@ View your custom agents from `~/.claude/agents/`.
 - One-click to copy the agent invocation command
 
 ### MCP Servers
-See all configured MCP (Model Context Protocol) servers from your `.claude/.mcp.json` config.
+See all configured MCP (Model Context Protocol) servers from both global (`~/.claude/.mcp.json`) and project (`.claude/.mcp.json`) configs.
 
 - View server name and URL/command
+- Visual indicator for global vs project scope
 - Quick reference without opening config files
 
 ### Plugins
@@ -92,7 +93,7 @@ The extension automatically discovers resources from these locations:
 |--------------|-----------------|------------------|
 | Skills | `~/.claude/skills/` | `.claude/skills/` |
 | Agents | `~/.claude/agents/` | — |
-| MCP Servers | — | `.claude/.mcp.json` |
+| MCP Servers | `~/.claude/.mcp.json` | `.claude/.mcp.json` |
 | Plugins | `~/.claude/plugins/` | — |
 
 No additional configuration required.
@@ -100,7 +101,6 @@ No additional configuration required.
 ## Known Limitations
 
 - **Clipboard-based invocation**: Due to VS Code extension sandboxing, we cannot directly inject text into the Claude Code chat input. The extension copies commands to your clipboard for pasting.
-- **MCP Servers**: Only reads from project-level `.mcp.json`, not global config.
 
 ## Development
 

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as os from 'os';
 
 import { ResourceItem, ResourceScope, McpServer } from '../types';
 import { parseMcpConfig } from '../parsers/configParser';
@@ -15,7 +16,9 @@ export interface McpItem extends ResourceItem {
 /**
  * TreeDataProvider for MCP servers
  *
- * MCP servers are project-scoped, loaded from {workspace}/.claude/.mcp.json
+ * MCP servers are loaded from:
+ * - Global: ~/.claude/.mcp.json
+ * - Project: {workspace}/.claude/.mcp.json
  */
 export class McpProvider implements vscode.TreeDataProvider<McpItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<McpItem | undefined>();
@@ -51,23 +54,28 @@ export class McpProvider implements vscode.TreeDataProvider<McpItem> {
 
     let items: McpItem[] = [];
 
-    // MCP servers are project-scoped only
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) {
-      return [];
+    // Load global MCP servers from ~/.claude/.mcp.json
+    const globalConfigPath = path.join(os.homedir(), '.claude', '.mcp.json');
+    const globalServers = await parseMcpConfig(globalConfigPath);
+    for (const server of globalServers) {
+      const item = this.createMcpItem(server, 'global', globalConfigPath);
+      items.push(item);
     }
 
-    const mcpConfigPath = path.join(
-      workspaceFolder.uri.fsPath,
-      '.claude',
-      '.mcp.json'
-    );
+    // Load project MCP servers from {workspace}/.claude/.mcp.json
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (workspaceFolder) {
+      const projectConfigPath = path.join(
+        workspaceFolder.uri.fsPath,
+        '.claude',
+        '.mcp.json'
+      );
 
-    const servers = await parseMcpConfig(mcpConfigPath);
-
-    for (const server of servers) {
-      const item = this.createMcpItem(server, 'project', mcpConfigPath);
-      items.push(item);
+      const projectServers = await parseMcpConfig(projectConfigPath);
+      for (const server of projectServers) {
+        const item = this.createMcpItem(server, 'project', projectConfigPath);
+        items.push(item);
+      }
     }
 
     // Apply filter if set
@@ -78,8 +86,13 @@ export class McpProvider implements vscode.TreeDataProvider<McpItem> {
       );
     }
 
-    // Sort alphabetically by name
-    return items.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort: global first, then alphabetically by name
+    return items.sort((a, b) => {
+      if (a.scope !== b.scope) {
+        return a.scope === 'global' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   /**
