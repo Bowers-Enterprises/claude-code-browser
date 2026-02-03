@@ -5,7 +5,7 @@
 
 A VS Code extension that provides a sidebar panel for discovering and invoking your Claude Code resources — skills, agents, MCP servers, and plugins — all in one place.
 
-![Claude Code Browser Screenshot](docs/images/screenshot.jpg)
+![Claude Code Browser Screenshot](docs/images/screenshot-v2.jpg)
 
 ## Why This Extension?
 
