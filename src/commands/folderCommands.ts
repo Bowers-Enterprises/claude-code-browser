@@ -149,14 +149,36 @@ export function registerFolderCommands(
     })
   );
 
-  // Move to folder command
+  // Move to folder command (supports multi-select)
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeCodeBrowser.moveToFolder', async (item: unknown) => {
-      const resourceType = getResourceTypeFromItem(item);
-      const itemKey = getItemKey(item);
+    vscode.commands.registerCommand('claudeCodeBrowser.moveToFolder', async (clickedItem: unknown, selectedItems?: unknown[]) => {
+      // Use selected items if available, otherwise fall back to clicked item
+      const items = selectedItems && selectedItems.length > 0 ? selectedItems : [clickedItem];
 
-      if (!resourceType || !itemKey) {
-        vscode.window.showErrorMessage('Please select an item to move');
+      // Filter to only non-folder items and extract keys
+      const validItems: { resourceType: ResourceType; key: string }[] = [];
+      for (const item of items) {
+        // Skip folder items
+        if (item && typeof item === 'object' && (item as Record<string, unknown>).itemType === 'folder') {
+          continue;
+        }
+        const resourceType = getResourceTypeFromItem(item);
+        const key = getItemKey(item);
+        if (resourceType && key) {
+          validItems.push({ resourceType, key });
+        }
+      }
+
+      if (validItems.length === 0) {
+        vscode.window.showErrorMessage('Please select items to move');
+        return;
+      }
+
+      // All items must be same resource type
+      const resourceType = validItems[0].resourceType;
+      const mixedTypes = validItems.some(i => i.resourceType !== resourceType);
+      if (mixedTypes) {
+        vscode.window.showErrorMessage('Cannot move items of different types together');
         return;
       }
 
@@ -172,32 +194,58 @@ export function registerFolderCommands(
         return;
       }
 
+      const itemCount = validItems.length;
       const selected = await vscode.window.showQuickPick(options, {
-        placeHolder: 'Select destination folder'
+        placeHolder: `Select destination folder for ${itemCount} item${itemCount > 1 ? 's' : ''}`
       });
 
       if (selected !== undefined) {
-        await folderManager.assignItemToFolder(resourceType, itemKey, selected.folderId);
+        const keys = validItems.map(i => i.key);
+        await folderManager.assignItemsToFolder(resourceType, keys, selected.folderId);
         const destination = selected.folderId ?
           folders.find(f => f.id === selected.folderId)?.name : 'root level';
-        vscode.window.showInformationMessage(`Moved to ${destination}`);
+        vscode.window.showInformationMessage(`Moved ${itemCount} item${itemCount > 1 ? 's' : ''} to ${destination}`);
       }
     })
   );
 
-  // Move to root command (convenience command)
+  // Move to root command (convenience command, supports multi-select)
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeCodeBrowser.moveToRoot', async (item: unknown) => {
-      const resourceType = getResourceTypeFromItem(item);
-      const itemKey = getItemKey(item);
+    vscode.commands.registerCommand('claudeCodeBrowser.moveToRoot', async (clickedItem: unknown, selectedItems?: unknown[]) => {
+      // Use selected items if available, otherwise fall back to clicked item
+      const items = selectedItems && selectedItems.length > 0 ? selectedItems : [clickedItem];
 
-      if (!resourceType || !itemKey) {
-        vscode.window.showErrorMessage('Please select an item to move');
+      // Filter to only non-folder items and extract keys
+      const validItems: { resourceType: ResourceType; key: string }[] = [];
+      for (const item of items) {
+        // Skip folder items
+        if (item && typeof item === 'object' && (item as Record<string, unknown>).itemType === 'folder') {
+          continue;
+        }
+        const resourceType = getResourceTypeFromItem(item);
+        const key = getItemKey(item);
+        if (resourceType && key) {
+          validItems.push({ resourceType, key });
+        }
+      }
+
+      if (validItems.length === 0) {
+        vscode.window.showErrorMessage('Please select items to move');
         return;
       }
 
-      await folderManager.assignItemToFolder(resourceType, itemKey, undefined);
-      vscode.window.showInformationMessage('Moved to root level');
+      // All items must be same resource type
+      const resourceType = validItems[0].resourceType;
+      const mixedTypes = validItems.some(i => i.resourceType !== resourceType);
+      if (mixedTypes) {
+        vscode.window.showErrorMessage('Cannot move items of different types together');
+        return;
+      }
+
+      const keys = validItems.map(i => i.key);
+      await folderManager.assignItemsToFolder(resourceType, keys, undefined);
+      const itemCount = validItems.length;
+      vscode.window.showInformationMessage(`Moved ${itemCount} item${itemCount > 1 ? 's' : ''} to root level`);
     })
   );
 }
