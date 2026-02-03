@@ -3,7 +3,7 @@ import { SkillsProvider } from './providers/skillsProvider';
 import { AgentsProvider } from './providers/agentsProvider';
 import { McpProvider } from './providers/mcpProvider';
 import { PluginsProvider } from './providers/pluginsProvider';
-import { registerInvokeCommand, registerRefreshCommand, registerSearchCommand } from './commands';
+import { registerInvokeCommand, registerRefreshCommand, registerSearchCommand, registerClearFilterCommand } from './commands';
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Claude Code Browser activating...');
@@ -33,6 +33,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerRefreshCommand(context, providers);
     registerInvokeCommand(context);
     registerSearchCommand(context, providers);
+    registerClearFilterCommand(context, providers);
 
     console.log('Claude Code Browser activated successfully');
   } catch (error) {

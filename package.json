@@ -76,6 +76,11 @@
         "command": "claudeCodeBrowser.search",
         "title": "Search",
         "icon": "$(search)"
+      },
+      {
+        "command": "claudeCodeBrowser.clearFilter",
+        "title": "Clear Filter",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -83,6 +88,11 @@
         {
           "command": "claudeCodeBrowser.refresh",
           "when": "view =~ /claudeCodeBrowser\\./",
+          "group": "navigation"
+        },
+        {
+          "command": "claudeCodeBrowser.clearFilter",
+          "when": "view =~ /claudeCodeBrowser\\./ && claudeCodeBrowser.filterActive",
           "group": "navigation"
         },
         {

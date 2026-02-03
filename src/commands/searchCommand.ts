@@ -15,6 +15,24 @@ interface Providers {
 }
 
 /**
+ * Set the filter active context for showing/hiding clear button
+ */
+function setFilterActiveContext(active: boolean): void {
+  vscode.commands.executeCommand('setContext', 'claudeCodeBrowser.filterActive', active);
+}
+
+/**
+ * Clear filters on all providers
+ */
+function clearAllFilters(providers: Providers): void {
+  providers.skills.setFilter('');
+  providers.agents.setFilter('');
+  providers.mcp.setFilter('');
+  providers.plugins.setFilter('');
+  setFilterActiveContext(false);
+}
+
+/**
  * Register the search command that filters all resource providers
  *
  * @param context - Extension context for managing subscriptions
@@ -24,7 +42,7 @@ export function registerSearchCommand(
   context: vscode.ExtensionContext,
   providers: Providers
 ): void {
-  const command = vscode.commands.registerCommand(
+  const searchCommand = vscode.commands.registerCommand(
     'claudeCodeBrowser.search',
     async () => {
       const query = await vscode.window.showInputBox({
@@ -44,6 +62,9 @@ export function registerSearchCommand(
       providers.mcp.setFilter(query);
       providers.plugins.setFilter(query);
 
+      // Update context for clear button visibility
+      setFilterActiveContext(query.length > 0);
+
       // Show feedback to user
       if (query) {
         vscode.window.showInformationMessage(`Filtering by: "${query}"`);
@@ -53,5 +74,26 @@ export function registerSearchCommand(
     }
   );
 
-  context.subscriptions.push(command);
+  context.subscriptions.push(searchCommand);
+}
+
+/**
+ * Register the clear filter command
+ *
+ * @param context - Extension context for managing subscriptions
+ * @param providers - Object containing all provider instances
+ */
+export function registerClearFilterCommand(
+  context: vscode.ExtensionContext,
+  providers: Providers
+): void {
+  const clearCommand = vscode.commands.registerCommand(
+    'claudeCodeBrowser.clearFilter',
+    () => {
+      clearAllFilters(providers);
+      vscode.window.showInformationMessage('Filter cleared');
+    }
+  );
+
+  context.subscriptions.push(clearCommand);
 }

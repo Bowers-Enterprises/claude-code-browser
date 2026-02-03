@@ -5,4 +5,4 @@
 
 export { registerInvokeCommand } from './invokeCommand';
 export { registerRefreshCommand } from './refreshCommand';
-export { registerSearchCommand } from './searchCommand';
+export { registerSearchCommand, registerClearFilterCommand } from './searchCommand';
