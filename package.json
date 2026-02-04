@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -110,6 +110,29 @@
       {
         "command": "claudeCodeBrowser.copyCommand",
         "title": "Copy Command"
+      },
+      {
+        "command": "claudeCodeBrowser.createPrompt",
+        "title": "New Prompt",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeCodeBrowser.editPrompt",
+        "title": "Edit Prompt"
+      },
+      {
+        "command": "claudeCodeBrowser.deletePrompt",
+        "title": "Delete Prompt"
+      },
+      {
+        "command": "claudeCodeBrowser.exportPrompts",
+        "title": "Export Prompts",
+        "icon": "$(export)"
+      },
+      {
+        "command": "claudeCodeBrowser.importPrompts",
+        "title": "Import Prompts",
+        "icon": "$(import)"
       }
     ],
     "menus": {
@@ -148,6 +171,21 @@
           "command": "claudeCodeBrowser.search",
           "when": "view =~ /claudeCodeBrowser\\./",
           "group": "navigation@4"
+        },
+        {
+          "command": "claudeCodeBrowser.createPrompt",
+          "when": "view == claudeCodeBrowser.commands",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.exportPrompts",
+          "when": "view == claudeCodeBrowser.commands",
+          "group": "navigation@5"
+        },
+        {
+          "command": "claudeCodeBrowser.importPrompts",
+          "when": "view == claudeCodeBrowser.commands",
+          "group": "navigation@6"
         }
       ],
       "view/item/context": [
@@ -170,6 +208,16 @@
           "command": "claudeCodeBrowser.moveToRoot",
           "when": "viewItem == skill || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@2"
+        },
+        {
+          "command": "claudeCodeBrowser.editPrompt",
+          "when": "viewItem == customPrompt",
+          "group": "1_prompt@1"
+        },
+        {
+          "command": "claudeCodeBrowser.deletePrompt",
+          "when": "viewItem == customPrompt",
+          "group": "1_prompt@2"
         }
       ]
     }

@@ -2,11 +2,17 @@
  * TreeDataProvider for Claude Code Commands
  *
  * Displays a curated list of useful Claude Code CLI flags, slash commands,
- * and pre-built prompts. Clicking an item copies it to the clipboard.
+ * pre-built prompts, and user-created custom prompts. Clicking an item copies it to the clipboard.
  */
 
 import * as vscode from 'vscode';
 import { CommandCategory, CommandDefinition } from '../types';
+import { CustomPromptsManager, CustomPrompt } from '../services/customPromptsManager';
+
+/**
+ * Extended category type including custom prompts
+ */
+type ExtendedCategory = CommandCategory | 'custom';
 
 /**
  * Curated list of useful Claude Code commands and prompts
@@ -278,7 +284,8 @@ const COMMANDS: CommandDefinition[] = [
 /**
  * Category display information
  */
-const CATEGORIES: Record<CommandCategory, { label: string; icon: string }> = {
+const CATEGORIES: Record<ExtendedCategory, { label: string; icon: string }> = {
+  'custom': { label: 'My Prompts', icon: 'star-full' },
   'cli-flags': { label: 'CLI Flags', icon: 'terminal' },
   'slash-commands': { label: 'Slash Commands', icon: 'symbol-event' },
   'prompts': { label: 'Quick Prompts', icon: 'comment' }
@@ -289,13 +296,13 @@ const CATEGORIES: Record<CommandCategory, { label: string; icon: string }> = {
  */
 class CategoryItem extends vscode.TreeItem {
   constructor(
-    public readonly category: CommandCategory,
+    public readonly category: ExtendedCategory,
     childCount: number
   ) {
     const info = CATEGORIES[category];
     super(info.label, vscode.TreeItemCollapsibleState.Expanded);
     this.iconPath = new vscode.ThemeIcon(info.icon);
-    this.contextValue = 'commandCategory';
+    this.contextValue = category === 'custom' ? 'customPromptCategory' : 'commandCategory';
     this.description = `(${childCount})`;
   }
 }
@@ -327,7 +334,43 @@ class CommandItem extends vscode.TreeItem {
   }
 }
 
-type CommandTreeItem = CategoryItem | CommandItem;
+/**
+ * Tree item for a custom prompt (has edit/delete options)
+ */
+class CustomPromptItem extends vscode.TreeItem {
+  constructor(
+    public readonly prompt: CustomPrompt
+  ) {
+    super(prompt.name, vscode.TreeItemCollapsibleState.None);
+
+    this.description = prompt.description;
+    this.tooltip = new vscode.MarkdownString();
+    this.tooltip.appendMarkdown(`**${prompt.name}**\n\n`);
+    if (prompt.description) {
+      this.tooltip.appendMarkdown(`${prompt.description}\n\n`);
+    }
+    this.tooltip.appendMarkdown(`*Click to copy:*\n\`\`\`\n${prompt.copyText}\n\`\`\``);
+
+    this.iconPath = new vscode.ThemeIcon(prompt.icon || 'note');
+    this.contextValue = 'customPrompt';
+
+    // Click to copy to clipboard
+    this.command = {
+      command: 'claudeCodeBrowser.copyCommand',
+      title: 'Copy Command',
+      arguments: [{
+        id: prompt.id,
+        name: prompt.name,
+        description: prompt.description,
+        copyText: prompt.copyText,
+        category: 'custom',
+        icon: prompt.icon
+      }]
+    };
+  }
+}
+
+type CommandTreeItem = CategoryItem | CommandItem | CustomPromptItem;
 
 /**
  * TreeDataProvider for Claude Code commands and prompts
@@ -337,6 +380,16 @@ export class CommandsProvider implements vscode.TreeDataProvider<CommandTreeItem
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private filterText: string = '';
+  private customPromptsManager?: CustomPromptsManager;
+
+  constructor(customPromptsManager?: CustomPromptsManager) {
+    this.customPromptsManager = customPromptsManager;
+
+    // Listen for custom prompt changes
+    if (customPromptsManager) {
+      customPromptsManager.onDidChange(() => this.refresh());
+    }
+  }
 
   /**
    * Set filter text and refresh the view
@@ -368,19 +421,56 @@ export class CommandsProvider implements vscode.TreeDataProvider<CommandTreeItem
   getChildren(element?: CommandTreeItem): CommandTreeItem[] {
     // Root level: return categories
     if (!element) {
+      const result: CategoryItem[] = [];
+
+      // Custom prompts first (if any exist)
+      const customPrompts = this.getFilteredCustomPrompts();
+      if (customPrompts.length > 0 || !this.filterText) {
+        result.push(new CategoryItem('custom', customPrompts.length));
+      }
+
+      // Built-in categories
       const categories: CommandCategory[] = ['cli-flags', 'slash-commands', 'prompts'];
-      return categories.map(cat => {
+      for (const cat of categories) {
         const commands = this.getCommandsForCategory(cat);
-        return new CategoryItem(cat, commands.length);
-      }).filter(cat => this.getCommandsForCategory(cat.category).length > 0);
+        if (commands.length > 0) {
+          result.push(new CategoryItem(cat, commands.length));
+        }
+      }
+
+      return result;
     }
 
-    // Category level: return commands in that category
+    // Category level: return commands/prompts in that category
     if (element instanceof CategoryItem) {
-      return this.getCommandsForCategory(element.category).map(cmd => new CommandItem(cmd));
+      if (element.category === 'custom') {
+        return this.getFilteredCustomPrompts().map(p => new CustomPromptItem(p));
+      }
+      return this.getCommandsForCategory(element.category as CommandCategory).map(cmd => new CommandItem(cmd));
     }
 
     return [];
+  }
+
+  /**
+   * Get filtered custom prompts
+   */
+  private getFilteredCustomPrompts(): CustomPrompt[] {
+    if (!this.customPromptsManager) {
+      return [];
+    }
+
+    const prompts = this.customPromptsManager.getPrompts();
+
+    if (!this.filterText) {
+      return prompts;
+    }
+
+    return prompts.filter(p =>
+      p.name.toLowerCase().includes(this.filterText) ||
+      p.description.toLowerCase().includes(this.filterText) ||
+      p.copyText.toLowerCase().includes(this.filterText)
+    );
   }
 
   /**
@@ -402,13 +492,214 @@ export class CommandsProvider implements vscode.TreeDataProvider<CommandTreeItem
 }
 
 /**
- * Register the copy command handler
+ * Register all command-related handlers
  */
 export function registerCopyCommand(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand('claudeCodeBrowser.copyCommand', async (commandDef: CommandDefinition) => {
       await vscode.env.clipboard.writeText(commandDef.copyText);
       vscode.window.showInformationMessage(`Copied: ${commandDef.name}`);
+    })
+  );
+}
+
+/**
+ * Register custom prompt management commands
+ */
+export function registerCustomPromptCommands(
+  context: vscode.ExtensionContext,
+  customPromptsManager: CustomPromptsManager
+): void {
+  // Create new prompt
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.createPrompt', async () => {
+      const name = await vscode.window.showInputBox({
+        prompt: 'Enter prompt name',
+        placeHolder: 'My Custom Prompt',
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Name cannot be empty';
+          }
+          return null;
+        }
+      });
+
+      if (!name) return;
+
+      const description = await vscode.window.showInputBox({
+        prompt: 'Enter description (optional)',
+        placeHolder: 'What does this prompt do?'
+      });
+
+      if (description === undefined) return;
+
+      const copyText = await vscode.window.showInputBox({
+        prompt: 'Enter the prompt text to copy',
+        placeHolder: 'The actual prompt that will be copied...',
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Prompt text cannot be empty';
+          }
+          return null;
+        }
+      });
+
+      if (!copyText) return;
+
+      // Icon selection
+      const icons = [
+        { label: '$(note) Note', value: 'note' },
+        { label: '$(star) Star', value: 'star' },
+        { label: '$(rocket) Rocket', value: 'rocket' },
+        { label: '$(lightbulb) Lightbulb', value: 'lightbulb' },
+        { label: '$(zap) Zap', value: 'zap' },
+        { label: '$(tools) Tools', value: 'tools' },
+        { label: '$(code) Code', value: 'code' },
+        { label: '$(bug) Bug', value: 'bug' },
+        { label: '$(beaker) Beaker', value: 'beaker' },
+        { label: '$(heart) Heart', value: 'heart' }
+      ];
+
+      const iconSelection = await vscode.window.showQuickPick(icons, {
+        placeHolder: 'Select an icon (optional)'
+      });
+
+      await customPromptsManager.createPrompt({
+        name: name.trim(),
+        description: description?.trim() || '',
+        copyText: copyText.trim(),
+        icon: iconSelection?.value
+      });
+
+      vscode.window.showInformationMessage(`Created prompt: ${name}`);
+    })
+  );
+
+  // Edit prompt
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.editPrompt', async (item: CustomPromptItem) => {
+      if (!(item instanceof CustomPromptItem)) {
+        vscode.window.showErrorMessage('Please select a custom prompt to edit');
+        return;
+      }
+
+      const prompt = item.prompt;
+
+      const name = await vscode.window.showInputBox({
+        prompt: 'Edit prompt name',
+        value: prompt.name,
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Name cannot be empty';
+          }
+          return null;
+        }
+      });
+
+      if (!name) return;
+
+      const description = await vscode.window.showInputBox({
+        prompt: 'Edit description',
+        value: prompt.description
+      });
+
+      if (description === undefined) return;
+
+      const copyText = await vscode.window.showInputBox({
+        prompt: 'Edit prompt text',
+        value: prompt.copyText,
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Prompt text cannot be empty';
+          }
+          return null;
+        }
+      });
+
+      if (!copyText) return;
+
+      await customPromptsManager.updatePrompt(prompt.id, {
+        name: name.trim(),
+        description: description?.trim() || '',
+        copyText: copyText.trim()
+      });
+
+      vscode.window.showInformationMessage(`Updated prompt: ${name}`);
+    })
+  );
+
+  // Delete prompt
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.deletePrompt', async (item: CustomPromptItem) => {
+      if (!(item instanceof CustomPromptItem)) {
+        vscode.window.showErrorMessage('Please select a custom prompt to delete');
+        return;
+      }
+
+      const confirm = await vscode.window.showWarningMessage(
+        `Delete prompt "${item.prompt.name}"?`,
+        { modal: true },
+        'Delete'
+      );
+
+      if (confirm === 'Delete') {
+        await customPromptsManager.deletePrompt(item.prompt.id);
+        vscode.window.showInformationMessage(`Deleted prompt: ${item.prompt.name}`);
+      }
+    })
+  );
+
+  // Export prompts
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.exportPrompts', async () => {
+      const prompts = customPromptsManager.getPrompts();
+
+      if (prompts.length === 0) {
+        vscode.window.showInformationMessage('No custom prompts to export');
+        return;
+      }
+
+      const uri = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file('claude-prompts.json'),
+        filters: { 'JSON': ['json'] }
+      });
+
+      if (uri) {
+        const json = customPromptsManager.exportPrompts();
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(json, 'utf-8'));
+        vscode.window.showInformationMessage(`Exported ${prompts.length} prompts`);
+      }
+    })
+  );
+
+  // Import prompts
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.importPrompts', async () => {
+      const uri = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: { 'JSON': ['json'] }
+      });
+
+      if (!uri || uri.length === 0) return;
+
+      try {
+        const content = await vscode.workspace.fs.readFile(uri[0]);
+        const json = Buffer.from(content).toString('utf-8');
+
+        const mode = await vscode.window.showQuickPick([
+          { label: 'Merge', value: 'merge' as const, description: 'Add to existing prompts, update duplicates' },
+          { label: 'Replace', value: 'replace' as const, description: 'Replace all existing prompts' }
+        ], {
+          placeHolder: 'How should prompts be imported?'
+        });
+
+        if (!mode) return;
+
+        const count = await customPromptsManager.importPrompts(json, mode.value);
+        vscode.window.showInformationMessage(`Imported ${count} prompts`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to import prompts: ${error}`);
+      }
     })
   );
 }

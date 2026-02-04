@@ -3,8 +3,9 @@ import { SkillsProvider } from './providers/skillsProvider';
 import { AgentsProvider } from './providers/agentsProvider';
 import { McpProvider } from './providers/mcpProvider';
 import { PluginsProvider } from './providers/pluginsProvider';
-import { CommandsProvider, registerCopyCommand } from './providers/commandsProvider';
+import { CommandsProvider, registerCopyCommand, registerCustomPromptCommands } from './providers/commandsProvider';
 import { FolderManager } from './services/folderManager';
+import { CustomPromptsManager } from './services/customPromptsManager';
 import {
   registerInvokeCommand,
   registerRefreshCommand,
@@ -20,12 +21,15 @@ export function activate(context: vscode.ExtensionContext): void {
     // Create folder manager for virtual folder organization
     const folderManager = new FolderManager(context);
 
+    // Create custom prompts manager for user-created prompts
+    const customPromptsManager = new CustomPromptsManager(context);
+
     // Create providers with folder manager
     const skillsProvider = new SkillsProvider(folderManager);
     const agentsProvider = new AgentsProvider(folderManager);
     const mcpProvider = new McpProvider(folderManager);
     const pluginsProvider = new PluginsProvider(folderManager);
-    const commandsProvider = new CommandsProvider();
+    const commandsProvider = new CommandsProvider(customPromptsManager);
 
     // Create tree views with drag-and-drop support
     const skillsTreeView = skillsProvider.createTreeView();
@@ -61,6 +65,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerClearFilterCommand(context, providers);
     registerFolderCommands(context, folderManager);
     registerCopyCommand(context);
+    registerCustomPromptCommands(context, customPromptsManager);
 
     console.log('Claude Code Browser activated successfully');
   } catch (error) {
