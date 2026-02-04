@@ -55,18 +55,31 @@ export function registerSkillCommands(
         const globalSkillsDir = path.join(os.homedir(), '.claude', 'skills');
         const targetDir = path.join(globalSkillsDir, skillName);
 
+        // Ask user whether to move or copy
+        const action = await vscode.window.showQuickPick(
+          [
+            { label: 'Move', description: 'Move to global (removes from project)', action: 'move' },
+            { label: 'Copy', description: 'Copy to global (keeps project version)', action: 'copy' }
+          ],
+          { placeHolder: `Convert "${skillName}" to global skill`, title: 'Convert to Global Skill' }
+        );
+
+        if (!action) {
+          return;
+        }
+
         // Check if target already exists
         let targetExists = false;
         try {
           await fs.access(targetDir);
           targetExists = true;
         } catch {
-          // Target doesn't exist, which is fine
+          // Target doesn't exist
         }
 
         if (targetExists) {
           const choice = await vscode.window.showWarningMessage(
-            `A global skill named "${skillName}" already exists. Do you want to replace it?`,
+            `A global skill named "${skillName}" already exists. Replace it?`,
             { modal: true },
             'Replace',
             'Cancel'
@@ -76,7 +89,6 @@ export function registerSkillCommands(
             return;
           }
 
-          // Remove existing directory
           await fs.rm(targetDir, { recursive: true, force: true });
         }
 
@@ -86,9 +98,13 @@ export function registerSkillCommands(
         // Copy the skill folder recursively
         await copyDirectory(skillFolder, targetDir);
 
-        vscode.window.showInformationMessage(
-          `Skill "${skillName}" has been converted to a global skill.`
-        );
+        // If moving, delete the original
+        if (action.action === 'move') {
+          await fs.rm(skillFolder, { recursive: true, force: true });
+          vscode.window.showInformationMessage(`Skill "${skillName}" moved to global.`);
+        } else {
+          vscode.window.showInformationMessage(`Skill "${skillName}" copied to global.`);
+        }
 
         // Refresh the skills view
         skillsProvider.refresh();
