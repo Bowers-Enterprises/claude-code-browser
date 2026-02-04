@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -63,6 +63,10 @@
         {
           "id": "claudeCodeBrowser.commands",
           "name": "Commands"
+        },
+        {
+          "id": "claudeCodeBrowser.marketplace",
+          "name": "Marketplace"
         }
       ]
     },
@@ -133,6 +137,45 @@
         "command": "claudeCodeBrowser.importPrompts",
         "title": "Import Prompts",
         "icon": "$(import)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.installSkill",
+        "title": "Install Skill",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.viewOnGitHub",
+        "title": "View on GitHub",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.refresh",
+        "title": "Refresh Marketplace",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.addSource",
+        "title": "Add Skill Source",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.removeSource",
+        "title": "Remove Source"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.installSourceSkill",
+        "title": "Install Skill",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.viewSourceSkillOnGitHub",
+        "title": "View on GitHub",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "claudeCodeBrowser.marketplace.refreshSource",
+        "title": "Refresh Source",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -159,7 +202,7 @@
         },
         {
           "command": "claudeCodeBrowser.refresh",
-          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands",
+          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands && view != claudeCodeBrowser.marketplace",
           "group": "navigation@2"
         },
         {
@@ -186,6 +229,16 @@
           "command": "claudeCodeBrowser.importPrompts",
           "when": "view == claudeCodeBrowser.commands",
           "group": "navigation@6"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.refresh",
+          "when": "view == claudeCodeBrowser.marketplace",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.addSource",
+          "when": "view == claudeCodeBrowser.marketplace",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -218,6 +271,36 @@
           "command": "claudeCodeBrowser.deletePrompt",
           "when": "viewItem == customPrompt",
           "group": "1_prompt@2"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.installSkill",
+          "when": "viewItem == marketplace-skill || viewItem == marketplace-skill-installed",
+          "group": "1_marketplace@1"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.viewOnGitHub",
+          "when": "viewItem == marketplace-skill || viewItem == marketplace-skill-installed",
+          "group": "1_marketplace@2"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.removeSource",
+          "when": "viewItem == marketplace-source",
+          "group": "1_marketplace@1"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.refreshSource",
+          "when": "viewItem == marketplace-source",
+          "group": "1_marketplace@2"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.installSourceSkill",
+          "when": "viewItem == marketplace-source-skill || viewItem == marketplace-source-skill-installed",
+          "group": "1_marketplace@1"
+        },
+        {
+          "command": "claudeCodeBrowser.marketplace.viewSourceSkillOnGitHub",
+          "when": "viewItem == marketplace-source-skill || viewItem == marketplace-source-skill-installed",
+          "group": "1_marketplace@2"
         }
       ]
     }

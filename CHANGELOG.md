@@ -5,6 +5,18 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-02-03
+
+### Added
+- **Skill Marketplace**: Browse and install community skills with one click
+  - **Staff Picks**: 15 curated skills from daymade, lackeyjb, obra, trailofbits
+  - Categories: Productivity, Automation, Code Quality, Documentation, Testing, Deployment
+  - Real skills: GitHub Ops, Playwright, TDD, Systematic Debugging, Static Analysis, Markdown Tools, PDF Creator, and more
+  - **Add Your Own Sources**: Click "+" to add any GitHub repo containing skills
+  - Skills from user sources are fetched and cached automatically
+  - Right-click to Install or View on GitHub
+- Toolbar buttons in Marketplace: Refresh, Add Source
+
 ## [0.4.0] - 2025-02-03
 
 ### Added
