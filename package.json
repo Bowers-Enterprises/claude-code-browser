@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {

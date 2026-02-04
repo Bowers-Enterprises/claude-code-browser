@@ -35,75 +35,100 @@ export function registerSkillCommands(
     })
   );
 
-  // Convert to Global Skill command
+  // Convert to Global Skill command (supports multi-select)
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeCodeBrowser.convertToGlobalSkill', async (item: SkillItem) => {
-      if (!item?.filePath) {
-        vscode.window.showErrorMessage('No skill selected');
+    vscode.commands.registerCommand('claudeCodeBrowser.convertToGlobalSkill', async (item: SkillItem, allItems?: SkillItem[]) => {
+      // Handle multi-select: use allItems if provided, otherwise single item
+      const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
+
+      // Filter to only project skills
+      const projectSkills = items.filter(i => i?.filePath && i.scope === 'project');
+
+      if (projectSkills.length === 0) {
+        vscode.window.showErrorMessage('No project skills selected');
         return;
       }
 
-      if (item.scope !== 'project') {
-        vscode.window.showInformationMessage('This skill is already global');
-        return;
-      }
+      const skillNames = projectSkills.map(s => path.basename(path.dirname(s.filePath)));
+      const isMultiple = projectSkills.length > 1;
 
       try {
-        // Get the skill folder (parent directory of SKILL.md)
-        const skillFolder = path.dirname(item.filePath);
-        const skillName = path.basename(skillFolder);
-        const globalSkillsDir = path.join(os.homedir(), '.claude', 'skills');
-        const targetDir = path.join(globalSkillsDir, skillName);
-
         // Ask user whether to move or copy
         const action = await vscode.window.showQuickPick(
           [
             { label: 'Move', description: 'Move to global (removes from project)', action: 'move' },
             { label: 'Copy', description: 'Copy to global (keeps project version)', action: 'copy' }
           ],
-          { placeHolder: `Convert "${skillName}" to global skill`, title: 'Convert to Global Skill' }
+          {
+            placeHolder: isMultiple
+              ? `Convert ${projectSkills.length} skills to global`
+              : `Convert "${skillNames[0]}" to global skill`,
+            title: 'Convert to Global Skill'
+          }
         );
 
         if (!action) {
           return;
         }
 
-        // Check if target already exists
-        let targetExists = false;
-        try {
-          await fs.access(targetDir);
-          targetExists = true;
-        } catch {
-          // Target doesn't exist
-        }
-
-        if (targetExists) {
-          const choice = await vscode.window.showWarningMessage(
-            `A global skill named "${skillName}" already exists. Replace it?`,
-            { modal: true },
-            'Replace',
-            'Cancel'
-          );
-
-          if (choice !== 'Replace') {
-            return;
-          }
-
-          await fs.rm(targetDir, { recursive: true, force: true });
-        }
-
-        // Ensure global skills directory exists
+        const globalSkillsDir = path.join(os.homedir(), '.claude', 'skills');
         await fs.mkdir(globalSkillsDir, { recursive: true });
 
-        // Copy the skill folder recursively
-        await copyDirectory(skillFolder, targetDir);
+        let converted = 0;
+        let skipped = 0;
 
-        // If moving, delete the original
-        if (action.action === 'move') {
-          await fs.rm(skillFolder, { recursive: true, force: true });
-          vscode.window.showInformationMessage(`Skill "${skillName}" moved to global.`);
-        } else {
-          vscode.window.showInformationMessage(`Skill "${skillName}" copied to global.`);
+        for (const skill of projectSkills) {
+          const skillFolder = path.dirname(skill.filePath);
+          const skillName = path.basename(skillFolder);
+          const targetDir = path.join(globalSkillsDir, skillName);
+
+          // Check if target already exists
+          let targetExists = false;
+          try {
+            await fs.access(targetDir);
+            targetExists = true;
+          } catch {
+            // Target doesn't exist
+          }
+
+          if (targetExists) {
+            const choice = await vscode.window.showWarningMessage(
+              `Global skill "${skillName}" already exists. Replace it?`,
+              { modal: true },
+              'Replace',
+              'Skip'
+            );
+
+            if (choice !== 'Replace') {
+              skipped++;
+              continue;
+            }
+
+            await fs.rm(targetDir, { recursive: true, force: true });
+          }
+
+          // Copy the skill folder
+          await copyDirectory(skillFolder, targetDir);
+
+          // If moving, delete the original
+          if (action.action === 'move') {
+            await fs.rm(skillFolder, { recursive: true, force: true });
+          }
+
+          converted++;
+        }
+
+        // Show result message
+        if (isMultiple) {
+          const verb = action.action === 'move' ? 'moved' : 'copied';
+          let msg = `${converted} skill${converted !== 1 ? 's' : ''} ${verb} to global.`;
+          if (skipped > 0) {
+            msg += ` ${skipped} skipped.`;
+          }
+          vscode.window.showInformationMessage(msg);
+        } else if (converted > 0) {
+          const verb = action.action === 'move' ? 'moved' : 'copied';
+          vscode.window.showInformationMessage(`Skill "${skillNames[0]}" ${verb} to global.`);
         }
 
         // Refresh the skills view
