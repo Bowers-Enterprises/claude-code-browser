@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -176,6 +176,15 @@
         "command": "claudeCodeBrowser.marketplace.refreshSource",
         "title": "Refresh Source",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.managePanels",
+        "title": "Manage Panels",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "claudeCodeBrowser.showAllPanels",
+        "title": "Show All Panels"
       }
     ],
     "menus": {
@@ -239,6 +248,11 @@
           "command": "claudeCodeBrowser.marketplace.addSource",
           "when": "view == claudeCodeBrowser.marketplace",
           "group": "navigation@2"
+        },
+        {
+          "command": "claudeCodeBrowser.managePanels",
+          "when": "view =~ /claudeCodeBrowser\\./",
+          "group": "navigation@10"
         }
       ],
       "view/item/context": [
