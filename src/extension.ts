@@ -14,7 +14,8 @@ import {
   registerRefreshCommand,
   registerSearchCommand,
   registerClearFilterCommand,
-  registerFolderCommands
+  registerFolderCommands,
+  registerSkillCommands
 } from './commands';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -101,6 +102,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerSearchCommand(context, providers);
     registerClearFilterCommand(context, providers);
     registerFolderCommands(context, folderManager);
+    registerSkillCommands(context, skillsProvider);
     registerCopyCommand(context);
     registerCustomPromptCommands(context, customPromptsManager);
     registerMarketplaceCommands(context, marketplaceProvider);

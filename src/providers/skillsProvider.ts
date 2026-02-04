@@ -51,8 +51,8 @@ export class SkillItem extends vscode.TreeItem implements ResourceItem {
       ? new vscode.ThemeIcon('globe')
       : new vscode.ThemeIcon('folder-opened');
 
-    // Set context value for menu contributions
-    this.contextValue = 'skill';
+    // Set context value for menu contributions (different for project vs global)
+    this.contextValue = scope === 'project' ? 'skill-project' : 'skill-global';
 
     // Set command to invoke when clicked
     this.command = {

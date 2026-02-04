@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -185,6 +185,16 @@
       {
         "command": "claudeCodeBrowser.showAllPanels",
         "title": "Show All Panels"
+      },
+      {
+        "command": "claudeCodeBrowser.previewSkill",
+        "title": "Preview Skill",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "claudeCodeBrowser.convertToGlobalSkill",
+        "title": "Convert to Global Skill",
+        "icon": "$(globe)"
       }
     ],
     "menus": {
@@ -267,13 +277,23 @@
           "group": "1_folder@2"
         },
         {
+          "command": "claudeCodeBrowser.previewSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "0_skill@1"
+        },
+        {
+          "command": "claudeCodeBrowser.convertToGlobalSkill",
+          "when": "viewItem == skill-project",
+          "group": "0_skill@2"
+        },
+        {
           "command": "claudeCodeBrowser.moveToFolder",
-          "when": "viewItem == skill || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@1"
         },
         {
           "command": "claudeCodeBrowser.moveToRoot",
-          "when": "viewItem == skill || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@2"
         },
         {
@@ -315,6 +335,11 @@
           "command": "claudeCodeBrowser.marketplace.viewSourceSkillOnGitHub",
           "when": "viewItem == marketplace-source-skill || viewItem == marketplace-source-skill-installed",
           "group": "1_marketplace@2"
+        },
+        {
+          "command": "claudeCodeBrowser.previewSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "inline"
         }
       ]
     }
