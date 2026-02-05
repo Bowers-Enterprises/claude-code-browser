@@ -9,3 +9,4 @@ export { registerSearchCommand, registerClearFilterCommand } from './searchComma
 export { registerFolderCommands } from './folderCommands';
 export { registerSkillCommands, registerAgentCommands } from './skillCommands';
 export { registerMcpCommands } from './mcpCommands';
+export { registerResearchCommand } from './researchCommand';

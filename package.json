@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -205,10 +205,20 @@
         "command": "claudeCodeBrowser.previewMcp",
         "title": "Preview MCP Config",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "claudeCodeBrowser.generateResearchPrompt",
+        "title": "Create Skill from Research",
+        "icon": "$(lightbulb)"
       }
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "claudeCodeBrowser.generateResearchPrompt",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "navigation@0"
+        },
         {
           "command": "claudeCodeBrowser.createFolder",
           "when": "view == claudeCodeBrowser.skills",
@@ -295,6 +305,11 @@
           "command": "claudeCodeBrowser.convertToGlobalSkill",
           "when": "viewItem == skill-project",
           "group": "0_skill@2"
+        },
+        {
+          "command": "claudeCodeBrowser.generateResearchPrompt",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "0_create@1"
         },
         {
           "command": "claudeCodeBrowser.previewAgent",

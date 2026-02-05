@@ -5,6 +5,18 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-02-05
+
+### Added
+- **Create Skill from Research**: Generate comprehensive prompts for Claude Code to research a topic and create a skill
+  - Click the lightbulb icon (💡) in the Skills panel toolbar or right-click → "Create Skill from Research"
+  - Enter a topic (e.g., "Playwright testing best practices")
+  - Prompt is copied to clipboard with research instructions, SKILL.md template, and quality criteria
+  - Paste into Claude Code to have it research and create the skill
+- **Auto-detect New Skills**: Extension now watches `~/.claude/skills/` for new skills
+  - Shows notification when a new skill is created
+  - Click "Preview" to open the new skill immediately
+
 ## [0.7.3] - 2025-02-05
 
 ### Added

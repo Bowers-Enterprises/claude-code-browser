@@ -9,6 +9,7 @@ import { FolderManager } from './services/folderManager';
 import { CustomPromptsManager } from './services/customPromptsManager';
 import { MarketplaceSourceManager } from './services/marketplaceSourceManager';
 import { ViewVisibilityManager, PANEL_LABELS } from './services/viewVisibilityManager';
+import { SkillWatcherService } from './services/skillWatcherService';
 import {
   registerInvokeCommand,
   registerRefreshCommand,
@@ -17,7 +18,8 @@ import {
   registerFolderCommands,
   registerSkillCommands,
   registerAgentCommands,
-  registerMcpCommands
+  registerMcpCommands,
+  registerResearchCommand
 } from './commands';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -110,6 +112,21 @@ export function activate(context: vscode.ExtensionContext): void {
     registerCopyCommand(context);
     registerCustomPromptCommands(context, customPromptsManager);
     registerMarketplaceCommands(context, marketplaceProvider);
+    registerResearchCommand(context, skillsProvider);
+
+    // Create skill watcher for detecting new skills
+    const skillWatcher = new SkillWatcherService(context);
+    skillWatcher.start((skillName) => {
+      vscode.window.showInformationMessage(
+        `New skill "${skillName}" created!`,
+        'Preview'
+      ).then(choice => {
+        if (choice === 'Preview') {
+          skillsProvider.refresh();
+        }
+      });
+      skillsProvider.refresh();
+    });
 
     // Register panel management commands
     context.subscriptions.push(
