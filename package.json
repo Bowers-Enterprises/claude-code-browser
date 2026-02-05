@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -254,6 +254,16 @@
       {
         "command": "claudeCodeBrowser.renameAgent",
         "title": "Rename Agent"
+      },
+      {
+        "command": "claudeCodeBrowser.exportBundle",
+        "title": "Export as Bundle",
+        "icon": "$(package)"
+      },
+      {
+        "command": "claudeCodeBrowser.importBundle",
+        "title": "Import Bundle",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -262,6 +272,11 @@
           "command": "claudeCodeBrowser.generateResearchPrompt",
           "when": "view == claudeCodeBrowser.skills",
           "group": "navigation@0"
+        },
+        {
+          "command": "claudeCodeBrowser.importBundle",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "import@1"
         },
         {
           "command": "claudeCodeBrowser.createFolder",
@@ -374,6 +389,11 @@
           "command": "claudeCodeBrowser.copyPath",
           "when": "viewItem == skill-project || viewItem == skill-global",
           "group": "1_manage@4"
+        },
+        {
+          "command": "claudeCodeBrowser.exportBundle",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "1_manage@5"
         },
         {
           "command": "claudeCodeBrowser.deleteSkill",

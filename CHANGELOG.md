@@ -5,6 +5,19 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-02-05
+
+### Added
+- **Export as Bundle**: Select one or more skills → right-click → "Export as Bundle" to create a .zip file
+  - Supports multi-select: Cmd+click to select multiple skills
+  - Save dialog defaults to Desktop with smart naming
+  - Progress notification during export
+  - "Reveal in Finder" option after export
+- **Import Bundle**: Import skills from a .zip bundle via the Skills panel overflow menu
+  - Choose destination: Global (`~/.claude/skills/`) or Project (`.claude/skills/`)
+  - Conflict detection: prompts to Replace All or Skip existing skills
+  - Progress notification during import
+
 ## [0.10.0] - 2025-02-05
 
 ### Added
