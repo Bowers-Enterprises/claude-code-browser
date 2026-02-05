@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -511,6 +511,9 @@
           "group": "inline"
         }
       ]
+    },
+    "configurationDefaults": {
+      "workbench.tree.indent": 20
     }
   },
   "scripts": {
