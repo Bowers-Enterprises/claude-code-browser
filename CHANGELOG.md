@@ -5,6 +5,12 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2025-02-05
+
+### Added
+- **Preview Agents**: Click the preview icon or right-click → "Preview Agent" to open agent .md files in markdown preview
+- **Preview MCP Servers**: Click the preview icon or right-click → "Preview MCP Config" to open the .mcp.json config file
+
 ## [0.7.2] - 2025-02-04
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -195,6 +195,16 @@
         "command": "claudeCodeBrowser.convertToGlobalSkill",
         "title": "Convert to Global Skill",
         "icon": "$(globe)"
+      },
+      {
+        "command": "claudeCodeBrowser.previewAgent",
+        "title": "Preview Agent",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "claudeCodeBrowser.previewMcp",
+        "title": "Preview MCP Config",
+        "icon": "$(open-preview)"
       }
     ],
     "menus": {
@@ -287,6 +297,16 @@
           "group": "0_skill@2"
         },
         {
+          "command": "claudeCodeBrowser.previewAgent",
+          "when": "viewItem == agent",
+          "group": "0_agent@1"
+        },
+        {
+          "command": "claudeCodeBrowser.previewMcp",
+          "when": "viewItem == mcp",
+          "group": "0_mcp@1"
+        },
+        {
           "command": "claudeCodeBrowser.moveToFolder",
           "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@1"
@@ -339,6 +359,16 @@
         {
           "command": "claudeCodeBrowser.previewSkill",
           "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.previewAgent",
+          "when": "viewItem == agent",
+          "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.previewMcp",
+          "when": "viewItem == mcp",
           "group": "inline"
         }
       ]

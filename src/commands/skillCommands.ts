@@ -1,8 +1,12 @@
 /**
- * Skill-specific commands for Claude Code Browser
+ * Skill-specific and Agent-specific commands for Claude Code Browser
  *
+ * Skills:
  * - Preview: Opens SKILL.md in markdown preview mode
  * - Convert to Global: Copies project skill to ~/.claude/skills/
+ *
+ * Agents:
+ * - Preview: Opens agent .md file in markdown preview mode
  */
 
 import * as vscode from 'vscode';
@@ -10,6 +14,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { promises as fs } from 'fs';
 import { SkillItem, SkillsProvider } from '../providers/skillsProvider';
+import { AgentItem, AgentsProvider } from '../providers/agentsProvider';
 
 /**
  * Register skill-specific commands
@@ -136,6 +141,31 @@ export function registerSkillCommands(
 
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to convert skill: ${error}`);
+      }
+    })
+  );
+}
+
+/**
+ * Register agent-specific commands
+ */
+export function registerAgentCommands(
+  context: vscode.ExtensionContext,
+  agentsProvider: AgentsProvider
+): void {
+  // Preview Agent command - opens agent .md file in markdown preview
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.previewAgent', async (item: AgentItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No agent selected');
+        return;
+      }
+
+      try {
+        const uri = vscode.Uri.file(item.filePath);
+        await vscode.commands.executeCommand('markdown.showPreview', uri);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to preview agent: ${error}`);
       }
     })
   );

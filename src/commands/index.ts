@@ -7,4 +7,5 @@ export { registerInvokeCommand } from './invokeCommand';
 export { registerRefreshCommand } from './refreshCommand';
 export { registerSearchCommand, registerClearFilterCommand } from './searchCommand';
 export { registerFolderCommands } from './folderCommands';
-export { registerSkillCommands } from './skillCommands';
+export { registerSkillCommands, registerAgentCommands } from './skillCommands';
+export { registerMcpCommands } from './mcpCommands';
