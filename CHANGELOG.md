@@ -5,6 +5,17 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-02-05
+
+### Added
+- **Reveal in Finder**: Right-click any skill or agent → "Reveal in Finder" to open in OS file explorer
+- **Copy Path**: Right-click any skill or agent → "Copy Path" to copy the file path to clipboard
+- **Duplicate Skills**: Right-click a skill → "Duplicate Skill" to clone the entire skill folder (auto-names with "-copy" suffix)
+- **Duplicate Agents**: Right-click an agent → "Duplicate Agent" to clone the agent file
+- **Rename Skills**: Right-click a skill → "Rename Skill" to rename the skill folder in place
+- **Rename Agents**: Right-click an agent → "Rename Agent" to rename the agent file
+- Context menu now organized into clear sections: Actions → Management → Move → Delete
+
 ## [0.9.0] - 2025-02-05
 
 ### Added

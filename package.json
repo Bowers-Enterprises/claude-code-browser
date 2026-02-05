@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -230,6 +230,30 @@
         "command": "claudeCodeBrowser.deleteAgent",
         "title": "Delete Agent",
         "icon": "$(trash)"
+      },
+      {
+        "command": "claudeCodeBrowser.revealInFinder",
+        "title": "Reveal in Finder"
+      },
+      {
+        "command": "claudeCodeBrowser.copyPath",
+        "title": "Copy Path"
+      },
+      {
+        "command": "claudeCodeBrowser.duplicateSkill",
+        "title": "Duplicate Skill"
+      },
+      {
+        "command": "claudeCodeBrowser.renameSkill",
+        "title": "Rename Skill"
+      },
+      {
+        "command": "claudeCodeBrowser.duplicateAgent",
+        "title": "Duplicate Agent"
+      },
+      {
+        "command": "claudeCodeBrowser.renameAgent",
+        "title": "Rename Agent"
       }
     ],
     "menus": {
@@ -332,6 +356,26 @@
           "group": "0_skill@3"
         },
         {
+          "command": "claudeCodeBrowser.duplicateSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "1_manage@1"
+        },
+        {
+          "command": "claudeCodeBrowser.renameSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "1_manage@2"
+        },
+        {
+          "command": "claudeCodeBrowser.revealInFinder",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "1_manage@3"
+        },
+        {
+          "command": "claudeCodeBrowser.copyPath",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "1_manage@4"
+        },
+        {
           "command": "claudeCodeBrowser.deleteSkill",
           "when": "viewItem == skill-project || viewItem == skill-global",
           "group": "3_destructive@1"
@@ -350,6 +394,26 @@
           "command": "claudeCodeBrowser.editAgent",
           "when": "viewItem == agent",
           "group": "0_agent@2"
+        },
+        {
+          "command": "claudeCodeBrowser.duplicateAgent",
+          "when": "viewItem == agent",
+          "group": "1_manage@1"
+        },
+        {
+          "command": "claudeCodeBrowser.renameAgent",
+          "when": "viewItem == agent",
+          "group": "1_manage@2"
+        },
+        {
+          "command": "claudeCodeBrowser.revealInFinder",
+          "when": "viewItem == agent",
+          "group": "1_manage@3"
+        },
+        {
+          "command": "claudeCodeBrowser.copyPath",
+          "when": "viewItem == agent",
+          "group": "1_manage@4"
         },
         {
           "command": "claudeCodeBrowser.deleteAgent",

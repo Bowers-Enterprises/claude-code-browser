@@ -6,11 +6,19 @@
  * - Edit: Opens SKILL.md in text editor
  * - Delete: Removes skill folder with confirmation
  * - Convert to Global: Copies project skill to ~/.claude/skills/
+ * - Duplicate: Clones skill folder with "-copy" suffix
+ * - Rename: Renames skill folder
  *
  * Agents:
  * - Preview: Opens agent .md file in markdown preview mode
  * - Edit: Opens agent .md file in text editor
  * - Delete: Removes agent file with confirmation
+ * - Duplicate: Copies agent file with "-copy" suffix
+ * - Rename: Renames agent file
+ *
+ * Shared:
+ * - Reveal in Finder: Opens file/folder in OS file explorer
+ * - Copy Path: Copies file path to clipboard
  */
 
 import * as vscode from 'vscode';
@@ -214,6 +222,114 @@ export function registerSkillCommands(
       }
     })
   );
+
+  // Reveal in Finder - works for any resource item
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.revealInFinder', async (item: { filePath?: string }) => {
+      if (!item?.filePath) {
+        return;
+      }
+      await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(item.filePath));
+    })
+  );
+
+  // Copy Path - copies file path to clipboard
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.copyPath', async (item: { filePath?: string }) => {
+      if (!item?.filePath) {
+        return;
+      }
+      await vscode.env.clipboard.writeText(item.filePath);
+      vscode.window.showInformationMessage('Path copied to clipboard.');
+    })
+  );
+
+  // Duplicate Skill - clones skill folder
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.duplicateSkill', async (item: SkillItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No skill selected');
+        return;
+      }
+
+      try {
+        const skillFolder = path.dirname(item.filePath);
+        const parentDir = path.dirname(skillFolder);
+        const skillName = path.basename(skillFolder);
+
+        // Find a unique name
+        let copyName = `${skillName}-copy`;
+        let counter = 2;
+        while (true) {
+          try {
+            await fs.access(path.join(parentDir, copyName));
+            copyName = `${skillName}-copy-${counter}`;
+            counter++;
+          } catch {
+            break; // Name is available
+          }
+        }
+
+        await copyDirectory(path.join(parentDir, skillName), path.join(parentDir, copyName));
+        vscode.window.showInformationMessage(`Skill duplicated as "${copyName}".`);
+        skillsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to duplicate skill: ${error}`);
+      }
+    })
+  );
+
+  // Rename Skill - renames skill folder
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.renameSkill', async (item: SkillItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No skill selected');
+        return;
+      }
+
+      const skillFolder = path.dirname(item.filePath);
+      const currentName = path.basename(skillFolder);
+
+      const newName = await vscode.window.showInputBox({
+        prompt: 'New skill name',
+        value: currentName,
+        title: 'Rename Skill',
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Name cannot be empty';
+          }
+          if (/[/\\:*?"<>|]/.test(value)) {
+            return 'Name contains invalid characters';
+          }
+          return undefined;
+        }
+      });
+
+      if (!newName || newName === currentName) {
+        return;
+      }
+
+      try {
+        const parentDir = path.dirname(skillFolder);
+        const newPath = path.join(parentDir, newName);
+
+        // Check if target exists
+        try {
+          await fs.access(newPath);
+          vscode.window.showErrorMessage(`A skill named "${newName}" already exists.`);
+          return;
+        } catch {
+          // Good - doesn't exist
+        }
+
+        await fs.rename(skillFolder, newPath);
+        vscode.window.showInformationMessage(`Skill renamed to "${newName}".`);
+        skillsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to rename skill: ${error}`);
+      }
+    })
+  );
 }
 
 /**
@@ -301,6 +417,91 @@ export function registerAgentCommands(
         agentsProvider.refresh();
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to delete agent: ${error}`);
+      }
+    })
+  );
+
+  // Duplicate Agent - copies agent file
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.duplicateAgent', async (item: AgentItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No agent selected');
+        return;
+      }
+
+      try {
+        const agentDir = path.dirname(item.filePath);
+        const agentName = path.basename(item.filePath, '.md');
+
+        // Find a unique name
+        let copyName = `${agentName}-copy`;
+        let counter = 2;
+        while (true) {
+          try {
+            await fs.access(path.join(agentDir, `${copyName}.md`));
+            copyName = `${agentName}-copy-${counter}`;
+            counter++;
+          } catch {
+            break; // Name is available
+          }
+        }
+
+        await fs.copyFile(item.filePath, path.join(agentDir, `${copyName}.md`));
+        vscode.window.showInformationMessage(`Agent duplicated as "${copyName}".`);
+        agentsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to duplicate agent: ${error}`);
+      }
+    })
+  );
+
+  // Rename Agent - renames agent file
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.renameAgent', async (item: AgentItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No agent selected');
+        return;
+      }
+
+      const currentName = path.basename(item.filePath, '.md');
+
+      const newName = await vscode.window.showInputBox({
+        prompt: 'New agent name',
+        value: currentName,
+        title: 'Rename Agent',
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Name cannot be empty';
+          }
+          if (/[/\\:*?"<>|]/.test(value)) {
+            return 'Name contains invalid characters';
+          }
+          return undefined;
+        }
+      });
+
+      if (!newName || newName === currentName) {
+        return;
+      }
+
+      try {
+        const agentDir = path.dirname(item.filePath);
+        const newPath = path.join(agentDir, `${newName}.md`);
+
+        // Check if target exists
+        try {
+          await fs.access(newPath);
+          vscode.window.showErrorMessage(`An agent named "${newName}" already exists.`);
+          return;
+        } catch {
+          // Good - doesn't exist
+        }
+
+        await fs.rename(item.filePath, newPath);
+        vscode.window.showInformationMessage(`Agent renamed to "${newName}".`);
+        agentsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to rename agent: ${error}`);
       }
     })
   );
