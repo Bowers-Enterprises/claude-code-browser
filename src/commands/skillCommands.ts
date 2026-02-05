@@ -3,10 +3,14 @@
  *
  * Skills:
  * - Preview: Opens SKILL.md in markdown preview mode
+ * - Edit: Opens SKILL.md in text editor
+ * - Delete: Removes skill folder with confirmation
  * - Convert to Global: Copies project skill to ~/.claude/skills/
  *
  * Agents:
  * - Preview: Opens agent .md file in markdown preview mode
+ * - Edit: Opens agent .md file in text editor
+ * - Delete: Removes agent file with confirmation
  */
 
 import * as vscode from 'vscode';
@@ -144,6 +148,72 @@ export function registerSkillCommands(
       }
     })
   );
+
+  // Edit Skill command - opens SKILL.md in text editor
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.editSkill', async (item: SkillItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No skill selected');
+        return;
+      }
+
+      try {
+        const uri = vscode.Uri.file(item.filePath);
+        await vscode.window.showTextDocument(uri);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to open skill: ${error}`);
+      }
+    })
+  );
+
+  // Delete Skill command - removes skill folder with confirmation
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.deleteSkill', async (item: SkillItem, allItems?: SkillItem[]) => {
+      const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
+      const validItems = items.filter(i => i?.filePath);
+
+      if (validItems.length === 0) {
+        vscode.window.showErrorMessage('No skills selected');
+        return;
+      }
+
+      const isMultiple = validItems.length > 1;
+      const skillNames = validItems.map(s => path.basename(path.dirname(s.filePath)));
+
+      const confirmMsg = isMultiple
+        ? `Delete ${validItems.length} skills? This cannot be undone.`
+        : `Delete skill "${skillNames[0]}"? This cannot be undone.`;
+
+      const choice = await vscode.window.showWarningMessage(
+        confirmMsg,
+        { modal: true },
+        'Delete'
+      );
+
+      if (choice !== 'Delete') {
+        return;
+      }
+
+      try {
+        let deleted = 0;
+        for (const skill of validItems) {
+          const skillFolder = path.dirname(skill.filePath);
+          await fs.rm(skillFolder, { recursive: true, force: true });
+          deleted++;
+        }
+
+        if (isMultiple) {
+          vscode.window.showInformationMessage(`${deleted} skill${deleted !== 1 ? 's' : ''} deleted.`);
+        } else {
+          vscode.window.showInformationMessage(`Skill "${skillNames[0]}" deleted.`);
+        }
+
+        skillsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to delete skill: ${error}`);
+      }
+    })
+  );
 }
 
 /**
@@ -166,6 +236,71 @@ export function registerAgentCommands(
         await vscode.commands.executeCommand('markdown.showPreview', uri);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to preview agent: ${error}`);
+      }
+    })
+  );
+
+  // Edit Agent command - opens agent .md file in text editor
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.editAgent', async (item: AgentItem) => {
+      if (!item?.filePath) {
+        vscode.window.showErrorMessage('No agent selected');
+        return;
+      }
+
+      try {
+        const uri = vscode.Uri.file(item.filePath);
+        await vscode.window.showTextDocument(uri);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to open agent: ${error}`);
+      }
+    })
+  );
+
+  // Delete Agent command - removes agent file with confirmation
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.deleteAgent', async (item: AgentItem, allItems?: AgentItem[]) => {
+      const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
+      const validItems = items.filter(i => i?.filePath);
+
+      if (validItems.length === 0) {
+        vscode.window.showErrorMessage('No agents selected');
+        return;
+      }
+
+      const isMultiple = validItems.length > 1;
+      const agentNames = validItems.map(a => path.basename(a.filePath, '.md'));
+
+      const confirmMsg = isMultiple
+        ? `Delete ${validItems.length} agents? This cannot be undone.`
+        : `Delete agent "${agentNames[0]}"? This cannot be undone.`;
+
+      const choice = await vscode.window.showWarningMessage(
+        confirmMsg,
+        { modal: true },
+        'Delete'
+      );
+
+      if (choice !== 'Delete') {
+        return;
+      }
+
+      try {
+        let deleted = 0;
+        for (const agent of validItems) {
+          await fs.rm(agent.filePath, { force: true });
+          deleted++;
+        }
+
+        if (isMultiple) {
+          vscode.window.showInformationMessage(`${deleted} agent${deleted !== 1 ? 's' : ''} deleted.`);
+        } else {
+          vscode.window.showInformationMessage(`Agent "${agentNames[0]}" deleted.`);
+        }
+
+        agentsProvider.refresh();
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to delete agent: ${error}`);
       }
     })
   );

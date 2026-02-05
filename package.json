@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -210,6 +210,26 @@
         "command": "claudeCodeBrowser.generateResearchPrompt",
         "title": "Create Skill from Research",
         "icon": "$(lightbulb)"
+      },
+      {
+        "command": "claudeCodeBrowser.editSkill",
+        "title": "Edit Skill",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "claudeCodeBrowser.deleteSkill",
+        "title": "Delete Skill",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "claudeCodeBrowser.editAgent",
+        "title": "Edit Agent",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "claudeCodeBrowser.deleteAgent",
+        "title": "Delete Agent",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -307,6 +327,16 @@
           "group": "0_skill@2"
         },
         {
+          "command": "claudeCodeBrowser.editSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "0_skill@3"
+        },
+        {
+          "command": "claudeCodeBrowser.deleteSkill",
+          "when": "viewItem == skill-project || viewItem == skill-global",
+          "group": "3_destructive@1"
+        },
+        {
           "command": "claudeCodeBrowser.generateResearchPrompt",
           "when": "view == claudeCodeBrowser.skills",
           "group": "0_create@1"
@@ -315,6 +345,16 @@
           "command": "claudeCodeBrowser.previewAgent",
           "when": "viewItem == agent",
           "group": "0_agent@1"
+        },
+        {
+          "command": "claudeCodeBrowser.editAgent",
+          "when": "viewItem == agent",
+          "group": "0_agent@2"
+        },
+        {
+          "command": "claudeCodeBrowser.deleteAgent",
+          "when": "viewItem == agent",
+          "group": "3_destructive@1"
         },
         {
           "command": "claudeCodeBrowser.previewMcp",
