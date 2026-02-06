@@ -132,6 +132,7 @@ export class McpProvider implements
   async getChildren(element?: McpTreeItem): Promise<McpTreeItem[]> {
     // Get all MCP items first
     const allItems = await this.getAllMcpItems();
+    const validKeys = new Set(allItems.map(m => m.filePath + ':' + m.name));
 
     // Root level: return folders + unassigned items
     if (!element) {
@@ -151,7 +152,7 @@ export class McpProvider implements
           );
           if (!folderMatches && !hasMatchingItems) continue;
         }
-        const totalCount = this.folderManager.countItemsRecursive('mcp', folder.id);
+        const totalCount = this.folderManager.countItemsRecursive('mcp', folder.id, validKeys);
         const subFolderCount = this.folderManager.getChildFolders('mcp', folder.id).length;
         result.push(new FolderItem(folder, 'mcp', totalCount, subFolderCount));
       }
@@ -178,7 +179,7 @@ export class McpProvider implements
       const subFolders = this.folderManager.getChildFolders('mcp', element.folder.id);
       const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
       for (const subFolder of sortedSubFolders) {
-        const itemCount = this.folderManager.countItemsRecursive('mcp', subFolder.id);
+        const itemCount = this.folderManager.countItemsRecursive('mcp', subFolder.id, validKeys);
         const subSubFolderCount = this.folderManager.getChildFolders('mcp', subFolder.id).length;
         if (this.filterText) {
           const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);

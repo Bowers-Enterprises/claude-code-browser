@@ -126,6 +126,7 @@ export class PluginsProvider implements
 
   async getChildren(element?: PluginTreeItem): Promise<PluginTreeItem[]> {
     const allPlugins = await this.getAllPlugins();
+    const validKeys = new Set(allPlugins.map(p => p.name));
 
     // Root level: return folders + unassigned items
     if (!element) {
@@ -145,7 +146,7 @@ export class PluginsProvider implements
           );
           if (!folderMatches && !hasMatchingItems) continue;
         }
-        const totalCount = this.folderManager.countItemsRecursive('plugin', folder.id);
+        const totalCount = this.folderManager.countItemsRecursive('plugin', folder.id, validKeys);
         const subFolderCount = this.folderManager.getChildFolders('plugin', folder.id).length;
         result.push(new FolderItem(folder, 'plugin', totalCount, subFolderCount));
       }
@@ -167,7 +168,7 @@ export class PluginsProvider implements
       const subFolders = this.folderManager.getChildFolders('plugin', element.folder.id);
       const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
       for (const subFolder of sortedSubFolders) {
-        const itemCount = this.folderManager.countItemsRecursive('plugin', subFolder.id);
+        const itemCount = this.folderManager.countItemsRecursive('plugin', subFolder.id, validKeys);
         const subSubFolderCount = this.folderManager.getChildFolders('plugin', subFolder.id).length;
         if (this.filterText) {
           const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);

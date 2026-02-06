@@ -22,12 +22,14 @@ export function registerBundleCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand('claudeCodeBrowser.exportBundle', async (item: SkillItem | FolderItem, allItems?: (SkillItem | FolderItem)[]) => {
       let skillFolders: string[] = [];
+      const folderNames: string[] = [];
 
       const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
 
       for (const i of items) {
         if (isFolderItem(i) && i.resourceType === 'skill') {
           // Folder selected: get all skill file paths recursively
+          folderNames.push(i.folder.name);
           const filePaths = folderManager.getItemsRecursive('skill', i.folder.id);
           skillFolders.push(...filePaths.map(fp => path.dirname(fp)));
         } else if ((i as SkillItem)?.filePath) {
@@ -45,10 +47,17 @@ export function registerBundleCommands(
 
       const skillNames = skillFolders.map(f => path.basename(f));
 
-      // Ask where to save
-      const defaultName = skillNames.length === 1
-        ? `${skillNames[0]}.zip`
-        : `claude-skills-bundle.zip`;
+      // Ask where to save - use folder name(s) if exported from folders
+      let defaultName: string;
+      if (folderNames.length === 1) {
+        defaultName = `${folderNames[0].toLowerCase().replace(/\s+/g, '-')}-skills.zip`;
+      } else if (folderNames.length > 1) {
+        defaultName = `${folderNames.map(n => n.toLowerCase().replace(/\s+/g, '-')).join('-')}-skills.zip`;
+      } else if (skillNames.length === 1) {
+        defaultName = `${skillNames[0]}.zip`;
+      } else {
+        defaultName = 'claude-skills-bundle.zip';
+      }
 
       const saveUri = await vscode.window.showSaveDialog({
         defaultUri: vscode.Uri.file(path.join(os.homedir(), 'Desktop', defaultName)),

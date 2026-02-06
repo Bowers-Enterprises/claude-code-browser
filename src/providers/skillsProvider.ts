@@ -146,6 +146,7 @@ export class SkillsProvider implements
     try {
       // Get all skills first
       const allSkills = await this.getAllSkills();
+      const validKeys = new Set(allSkills.map(s => s.filePath));
 
       // Root level: return folders + unassigned items
       if (!element) {
@@ -169,7 +170,7 @@ export class SkillsProvider implements
               continue;
             }
           }
-          const totalCount = this.folderManager.countItemsRecursive('skill', folder.id);
+          const totalCount = this.folderManager.countItemsRecursive('skill', folder.id, validKeys);
           const subFolderCount = this.folderManager.getChildFolders('skill', folder.id).length;
           result.push(new FolderItem(folder, 'skill', totalCount, subFolderCount));
         }
@@ -192,7 +193,7 @@ export class SkillsProvider implements
         const subFolders = this.folderManager.getChildFolders('skill', element.folder.id);
         const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
         for (const subFolder of sortedSubFolders) {
-          const itemCount = this.folderManager.countItemsRecursive('skill', subFolder.id);
+          const itemCount = this.folderManager.countItemsRecursive('skill', subFolder.id, validKeys);
           const subSubFolderCount = this.folderManager.getChildFolders('skill', subFolder.id).length;
           if (this.filterText) {
             const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);

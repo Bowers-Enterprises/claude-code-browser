@@ -187,6 +187,7 @@ export class AgentsProvider implements
   getChildren(element?: AgentTreeItem): Thenable<AgentTreeItem[]> {
     // Root level: return folders + unassigned items
     if (!element) {
+      const validKeys = new Set(this.agents.map(a => a.filePath));
       const folders = this.folderManager.getChildFolders('agent', undefined);
       const result: AgentTreeItem[] = [];
 
@@ -207,7 +208,7 @@ export class AgentsProvider implements
             continue;
           }
         }
-        const totalCount = this.folderManager.countItemsRecursive('agent', folder.id);
+        const totalCount = this.folderManager.countItemsRecursive('agent', folder.id, validKeys);
         const subFolderCount = this.folderManager.getChildFolders('agent', folder.id).length;
         result.push(new FolderItem(folder, 'agent', totalCount, subFolderCount));
       }
@@ -229,8 +230,9 @@ export class AgentsProvider implements
       // Add sub-folders first
       const subFolders = this.folderManager.getChildFolders('agent', element.folder.id);
       const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
+      const validAgentKeys = new Set(this.agents.map(a => a.filePath));
       for (const subFolder of sortedSubFolders) {
-        const itemCount = this.folderManager.countItemsRecursive('agent', subFolder.id);
+        const itemCount = this.folderManager.countItemsRecursive('agent', subFolder.id, validAgentKeys);
         const subSubFolderCount = this.folderManager.getChildFolders('agent', subFolder.id).length;
         if (this.filterText) {
           const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);

@@ -91,15 +91,17 @@ export class FolderManager {
   /**
    * Count all items assigned to a folder and all its descendant sub-folders
    */
-  countItemsRecursive(resourceType: ResourceType, folderId: string): number {
-    // Count direct items
+  countItemsRecursive(resourceType: ResourceType, folderId: string, validKeys?: Set<string>): number {
+    // Count direct items, optionally filtering to only items that actually exist
     const directItems = this.getItemsInFolder(resourceType, folderId);
-    let count = directItems.length;
+    let count = validKeys
+      ? directItems.filter(key => validKeys.has(key)).length
+      : directItems.length;
 
     // Add items from child folders recursively
     const childFolders = this.getChildFolders(resourceType, folderId);
     for (const child of childFolders) {
-      count += this.countItemsRecursive(resourceType, child.id);
+      count += this.countItemsRecursive(resourceType, child.id, validKeys);
     }
 
     return count;
