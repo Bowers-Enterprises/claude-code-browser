@@ -114,7 +114,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerCustomPromptCommands(context, customPromptsManager);
     registerMarketplaceCommands(context, marketplaceProvider);
     registerResearchCommand(context, skillsProvider);
-    registerBundleCommands(context, skillsProvider);
+    registerBundleCommands(context, skillsProvider, folderManager);
 
     // Create skill watcher for detecting new skills
     const skillWatcher = new SkillWatcherService(context);

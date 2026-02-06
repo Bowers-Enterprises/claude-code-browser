@@ -106,6 +106,18 @@ export class FolderManager {
   }
 
   /**
+   * Get all item file paths assigned to a folder and all its descendant sub-folders
+   */
+  getItemsRecursive(resourceType: ResourceType, folderId: string): string[] {
+    const items = [...this.getItemsInFolder(resourceType, folderId)];
+    const childFolders = this.getChildFolders(resourceType, folderId);
+    for (const child of childFolders) {
+      items.push(...this.getItemsRecursive(resourceType, child.id));
+    }
+    return items;
+  }
+
+  /**
    * Create a new folder
    */
   async createFolder(resourceType: ResourceType, name: string, parentId?: string): Promise<VirtualFolder> {

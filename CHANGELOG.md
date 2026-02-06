@@ -5,6 +5,14 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2025-02-06
+
+### Added
+- **Export Folder as Bundle**: Right-click any folder in Skills panel → "Export as Bundle"
+  - Exports all skills within the folder, including skills in sub-folders recursively
+  - Works alongside existing multi-select skill export
+  - Deduplicates skills that appear in multiple selections
+
 ## [0.13.0] - 2025-02-06
 
 ### Added

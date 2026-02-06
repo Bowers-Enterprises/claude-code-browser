@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -374,6 +374,11 @@
           "command": "claudeCodeBrowser.createSubfolder",
           "when": "viewItem == folder",
           "group": "1_folder@0"
+        },
+        {
+          "command": "claudeCodeBrowser.exportBundle",
+          "when": "viewItem == folder && view == claudeCodeBrowser.skills",
+          "group": "1_folder@3"
         },
         {
           "command": "claudeCodeBrowser.previewSkill",

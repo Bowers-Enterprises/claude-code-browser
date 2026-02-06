@@ -9,25 +9,40 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
 import { SkillItem, SkillsProvider } from '../providers/skillsProvider';
+import { FolderItem, isFolderItem } from '../providers/folderItem';
+import { FolderManager } from '../services/folderManager';
 import { exportBundle, importBundle, completeImport } from '../services/bundleService';
 
 export function registerBundleCommands(
   context: vscode.ExtensionContext,
-  skillsProvider: SkillsProvider
+  skillsProvider: SkillsProvider,
+  folderManager: FolderManager
 ): void {
   // Export Bundle - zip selected skills
   context.subscriptions.push(
-    vscode.commands.registerCommand('claudeCodeBrowser.exportBundle', async (item: SkillItem, allItems?: SkillItem[]) => {
-      const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
-      const validItems = items.filter(i => i?.filePath);
+    vscode.commands.registerCommand('claudeCodeBrowser.exportBundle', async (item: SkillItem | FolderItem, allItems?: (SkillItem | FolderItem)[]) => {
+      let skillFolders: string[] = [];
 
-      if (validItems.length === 0) {
-        vscode.window.showErrorMessage('No skills selected. Select skills first, then right-click → Export as Bundle.');
+      const items = allItems && allItems.length > 0 ? allItems : (item ? [item] : []);
+
+      for (const i of items) {
+        if (isFolderItem(i) && i.resourceType === 'skill') {
+          // Folder selected: get all skill file paths recursively
+          const filePaths = folderManager.getItemsRecursive('skill', i.folder.id);
+          skillFolders.push(...filePaths.map(fp => path.dirname(fp)));
+        } else if ((i as SkillItem)?.filePath) {
+          skillFolders.push(path.dirname((i as SkillItem).filePath));
+        }
+      }
+
+      // Deduplicate
+      skillFolders = [...new Set(skillFolders)];
+
+      if (skillFolders.length === 0) {
+        vscode.window.showErrorMessage('No skills found to export.');
         return;
       }
 
-      // Get skill folder paths
-      const skillFolders = validItems.map(i => path.dirname(i.filePath));
       const skillNames = skillFolders.map(f => path.basename(f));
 
       // Ask where to save
@@ -38,7 +53,7 @@ export function registerBundleCommands(
       const saveUri = await vscode.window.showSaveDialog({
         defaultUri: vscode.Uri.file(path.join(os.homedir(), 'Desktop', defaultName)),
         filters: { 'Zip Archive': ['zip'] },
-        title: `Export ${validItems.length} Skill${validItems.length > 1 ? 's' : ''} as Bundle`
+        title: `Export ${skillFolders.length} Skill${skillFolders.length > 1 ? 's' : ''} as Bundle`
       });
 
       if (!saveUri) {
@@ -49,7 +64,7 @@ export function registerBundleCommands(
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Exporting ${validItems.length} skill${validItems.length > 1 ? 's' : ''}...`,
+            title: `Exporting ${skillFolders.length} skill${skillFolders.length > 1 ? 's' : ''}...`,
             cancellable: false
           },
           async () => {
