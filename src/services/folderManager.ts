@@ -7,7 +7,7 @@ import { FolderState, VirtualFolder, ResourceType, FolderAssignments } from '../
  */
 export class FolderManager {
   private static STORAGE_KEY = 'claudeCodeBrowser.folderState';
-  private static CURRENT_VERSION = 1;
+  private static CURRENT_VERSION = 2;
 
   private state: FolderState;
   private _onDidChange = new vscode.EventEmitter<ResourceType>();
@@ -25,7 +25,9 @@ export class FolderManager {
   private loadState(): FolderState {
     const stored = this.context.globalState.get<FolderState>(FolderManager.STORAGE_KEY);
 
-    if (stored && stored.version === FolderManager.CURRENT_VERSION) {
+    if (stored && stored.version >= 1) {
+      // Migrate v1 to v2 (v1 folders just don't have parentId, which defaults to undefined = root)
+      stored.version = FolderManager.CURRENT_VERSION;
       return stored;
     }
 
@@ -62,6 +64,14 @@ export class FolderManager {
   }
 
   /**
+   * Get child folders of a parent folder, or root-level folders if parentId is undefined
+   */
+  getChildFolders(resourceType: ResourceType, parentId?: string): VirtualFolder[] {
+    const allFolders = this.state.folders[resourceType] ?? [];
+    return allFolders.filter(f => f.parentId === parentId);
+  }
+
+  /**
    * Get folder ID for an item, or undefined if at root level
    */
   getFolderForItem(resourceType: ResourceType, filePath: string): string | undefined {
@@ -79,12 +89,30 @@ export class FolderManager {
   }
 
   /**
+   * Count all items assigned to a folder and all its descendant sub-folders
+   */
+  countItemsRecursive(resourceType: ResourceType, folderId: string): number {
+    // Count direct items
+    const directItems = this.getItemsInFolder(resourceType, folderId);
+    let count = directItems.length;
+
+    // Add items from child folders recursively
+    const childFolders = this.getChildFolders(resourceType, folderId);
+    for (const child of childFolders) {
+      count += this.countItemsRecursive(resourceType, child.id);
+    }
+
+    return count;
+  }
+
+  /**
    * Create a new folder
    */
-  async createFolder(resourceType: ResourceType, name: string): Promise<VirtualFolder> {
+  async createFolder(resourceType: ResourceType, name: string, parentId?: string): Promise<VirtualFolder> {
     const folder: VirtualFolder = {
       id: this.generateId(),
       name,
+      parentId,
       resourceType
     };
 
@@ -111,18 +139,34 @@ export class FolderManager {
    * Delete a folder. Items in the folder return to root level.
    */
   async deleteFolder(resourceType: ResourceType, folderId: string): Promise<void> {
-    // Remove folder
-    this.state.folders[resourceType] = this.state.folders[resourceType].filter(
-      f => f.id !== folderId
-    );
+    // Recursively delete child folders first
+    const childFolders = this.getChildFolders(resourceType, folderId);
+    for (const child of childFolders) {
+      // Remove assignments for child folder (items return to root)
+      const assignments = this.state.assignments[resourceType];
+      for (const [key, value] of Object.entries(assignments)) {
+        if (value === child.id) {
+          delete assignments[key];
+        }
+      }
+      // Remove child folder definition
+      this.state.folders[resourceType] = this.state.folders[resourceType].filter(
+        f => f.id !== child.id
+      );
+    }
 
-    // Remove all assignments to this folder
+    // Remove assignments for this folder
     const assignments = this.state.assignments[resourceType];
     for (const [key, value] of Object.entries(assignments)) {
       if (value === folderId) {
         delete assignments[key];
       }
     }
+
+    // Remove this folder
+    this.state.folders[resourceType] = this.state.folders[resourceType].filter(
+      f => f.id !== folderId
+    );
 
     await this.saveState();
     this._onDidChange.fire(resourceType);

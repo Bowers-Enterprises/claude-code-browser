@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -102,6 +102,11 @@
       {
         "command": "claudeCodeBrowser.deleteFolder",
         "title": "Delete Folder"
+      },
+      {
+        "command": "claudeCodeBrowser.createSubfolder",
+        "title": "New Subfolder",
+        "icon": "$(new-folder)"
       },
       {
         "command": "claudeCodeBrowser.moveToFolder",
@@ -364,6 +369,11 @@
           "command": "claudeCodeBrowser.deleteFolder",
           "when": "viewItem == folder",
           "group": "1_folder@2"
+        },
+        {
+          "command": "claudeCodeBrowser.createSubfolder",
+          "when": "viewItem == folder",
+          "group": "1_folder@0"
         },
         {
           "command": "claudeCodeBrowser.previewSkill",

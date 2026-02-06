@@ -11,15 +11,26 @@ export class FolderItem extends vscode.TreeItem {
   constructor(
     public readonly folder: VirtualFolder,
     public readonly resourceType: ResourceType,
-    childCount: number
+    childCount: number,
+    subFolderCount: number = 0
   ) {
     super(folder.name, vscode.TreeItemCollapsibleState.Collapsed);
 
     this.id = `folder:${resourceType}:${folder.id}`;
     this.contextValue = 'folder';
     this.iconPath = new vscode.ThemeIcon('folder');
-    this.description = childCount > 0 ? `(${childCount})` : '';
-    this.tooltip = `${folder.name} - ${childCount} item${childCount !== 1 ? 's' : ''}`;
+
+    // Show total count including sub-folder items
+    const totalCount = childCount;
+    this.description = totalCount > 0 ? `(${totalCount})` : '';
+
+    const parts: string[] = [];
+    parts.push(`${folder.name}`);
+    if (subFolderCount > 0) {
+      parts.push(`${subFolderCount} subfolder${subFolderCount !== 1 ? 's' : ''}`);
+    }
+    parts.push(`${childCount} item${childCount !== 1 ? 's' : ''}`);
+    this.tooltip = parts.join(' - ');
   }
 }
 

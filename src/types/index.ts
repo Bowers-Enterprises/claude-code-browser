@@ -78,6 +78,8 @@ export interface VirtualFolder {
   id: string;
   /** Display name of the folder */
   name: string;
+  /** Parent folder ID. undefined = root level folder */
+  parentId?: string;
   /** The resource type this folder belongs to */
   resourceType: ResourceType;
 }

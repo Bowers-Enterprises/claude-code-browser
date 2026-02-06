@@ -102,6 +102,32 @@ export function registerFolderCommands(
     })
   );
 
+  // Create subfolder command (right-click on folder)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.createSubfolder', async (item: FolderItem) => {
+      if (!(item instanceof FolderItem)) {
+        vscode.window.showErrorMessage('Please select a folder');
+        return;
+      }
+
+      const name = await vscode.window.showInputBox({
+        prompt: `Create subfolder inside "${item.folder.name}"`,
+        placeHolder: 'Subfolder Name',
+        validateInput: (value) => {
+          if (!value || value.trim().length === 0) {
+            return 'Folder name cannot be empty';
+          }
+          return null;
+        }
+      });
+
+      if (name) {
+        await folderManager.createFolder(item.resourceType, name.trim(), item.folder.id);
+        vscode.window.showInformationMessage(`Created subfolder "${name}" inside "${item.folder.name}"`);
+      }
+    })
+  );
+
   // Rename folder command
   context.subscriptions.push(
     vscode.commands.registerCommand('claudeCodeBrowser.renameFolder', async (item: FolderItem) => {
@@ -137,7 +163,7 @@ export function registerFolderCommands(
       }
 
       const confirm = await vscode.window.showWarningMessage(
-        `Delete folder "${item.folder.name}"? Items will return to root level.`,
+        `Delete folder "${item.folder.name}" and all sub-folders? Items will return to root level.`,
         { modal: true },
         'Delete'
       );
@@ -182,12 +208,23 @@ export function registerFolderCommands(
         return;
       }
 
-      const folders = folderManager.getFolders(resourceType);
+      const allFolders = folderManager.getFolders(resourceType);
 
-      const options = [
-        { label: '$(home) Root Level', folderId: undefined as string | undefined },
-        ...folders.map(f => ({ label: `$(folder) ${f.name}`, folderId: f.id }))
+      // Build hierarchical folder list with indentation
+      const options: { label: string; folderId: string | undefined }[] = [
+        { label: '$(home) Root Level', folderId: undefined as string | undefined }
       ];
+
+      function addFolderOptions(parentId: string | undefined, indent: number): void {
+        const children = allFolders.filter(f => f.parentId === parentId);
+        children.sort((a, b) => a.name.localeCompare(b.name));
+        for (const folder of children) {
+          const prefix = indent > 0 ? '\u00A0\u00A0'.repeat(indent) + '$(folder) ' : '$(folder) ';
+          options.push({ label: `${prefix}${folder.name}`, folderId: folder.id });
+          addFolderOptions(folder.id, indent + 1);
+        }
+      }
+      addFolderOptions(undefined, 0);
 
       if (options.length === 1) {
         vscode.window.showInformationMessage('No folders exist. Create a folder first.');
@@ -203,7 +240,7 @@ export function registerFolderCommands(
         const keys = validItems.map(i => i.key);
         await folderManager.assignItemsToFolder(resourceType, keys, selected.folderId);
         const destination = selected.folderId ?
-          folders.find(f => f.id === selected.folderId)?.name : 'root level';
+          allFolders.find(f => f.id === selected.folderId)?.name : 'root level';
         vscode.window.showInformationMessage(`Moved ${itemCount} item${itemCount > 1 ? 's' : ''} to ${destination}`);
       }
     })

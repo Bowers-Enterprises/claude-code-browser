@@ -5,6 +5,18 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2025-02-06
+
+### Added
+- **Nested Folders**: Create folders inside folders for deeper organization
+  - Right-click any folder → "New Subfolder" to create a nested folder
+  - Works in all panels: Skills, Agents, MCP Servers, Plugins
+  - Drag-and-drop items into sub-folders
+  - "Move to Folder" picker now shows hierarchy with indentation
+  - Folder counts include items in all sub-folders recursively
+  - Deleting a folder cascades to all sub-folders (items return to root)
+  - Backward-compatible: existing folder layouts preserved automatically
+
 ## [0.12.0] - 2025-02-06
 
 ### Added

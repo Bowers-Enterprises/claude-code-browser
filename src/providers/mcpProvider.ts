@@ -135,7 +135,7 @@ export class McpProvider implements
 
     // Root level: return folders + unassigned items
     if (!element) {
-      const folders = this.folderManager.getFolders('mcp');
+      const folders = this.folderManager.getChildFolders('mcp', undefined);
       const result: McpTreeItem[] = [];
 
       const sortedFolders = [...folders].sort((a, b) => a.name.localeCompare(b.name));
@@ -151,7 +151,9 @@ export class McpProvider implements
           );
           if (!folderMatches && !hasMatchingItems) continue;
         }
-        result.push(new FolderItem(folder, 'mcp', itemsInFolder.length));
+        const totalCount = this.folderManager.countItemsRecursive('mcp', folder.id);
+        const subFolderCount = this.folderManager.getChildFolders('mcp', folder.id).length;
+        result.push(new FolderItem(folder, 'mcp', totalCount, subFolderCount));
       }
 
       const unassigned = allItems.filter(
@@ -168,12 +170,30 @@ export class McpProvider implements
       return result;
     }
 
-    // Folder children
+    // Folder children: return sub-folders + items
     if (isFolderItem(element)) {
+      const result: McpTreeItem[] = [];
+
+      // Add sub-folders first
+      const subFolders = this.folderManager.getChildFolders('mcp', element.folder.id);
+      const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
+      for (const subFolder of sortedSubFolders) {
+        const itemCount = this.folderManager.countItemsRecursive('mcp', subFolder.id);
+        const subSubFolderCount = this.folderManager.getChildFolders('mcp', subFolder.id).length;
+        if (this.filterText) {
+          const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);
+          if (!folderMatches && itemCount === 0) continue;
+        }
+        result.push(new FolderItem(subFolder, 'mcp', itemCount, subSubFolderCount));
+      }
+
+      // Add items directly in this folder
       const folderItems = allItems.filter(
         m => this.folderManager.getFolderForItem('mcp', m.filePath + ':' + m.name) === element.folder.id
       );
-      return this.applyFilter(folderItems).sort((a, b) => a.name.localeCompare(b.name));
+      result.push(...this.applyFilter(folderItems).sort((a, b) => a.name.localeCompare(b.name)));
+
+      return result;
     }
 
     return [];

@@ -187,7 +187,7 @@ export class AgentsProvider implements
   getChildren(element?: AgentTreeItem): Thenable<AgentTreeItem[]> {
     // Root level: return folders + unassigned items
     if (!element) {
-      const folders = this.folderManager.getFolders('agent');
+      const folders = this.folderManager.getChildFolders('agent', undefined);
       const result: AgentTreeItem[] = [];
 
       // Add folders first (sorted alphabetically)
@@ -207,7 +207,9 @@ export class AgentsProvider implements
             continue;
           }
         }
-        result.push(new FolderItem(folder, 'agent', itemsInFolder.length));
+        const totalCount = this.folderManager.countItemsRecursive('agent', folder.id);
+        const subFolderCount = this.folderManager.getChildFolders('agent', folder.id).length;
+        result.push(new FolderItem(folder, 'agent', totalCount, subFolderCount));
       }
 
       // Add unassigned items
@@ -220,13 +222,31 @@ export class AgentsProvider implements
       return Promise.resolve(result);
     }
 
-    // Folder children: return items assigned to this folder
+    // Folder children: return sub-folders + items assigned to this folder
     if (isFolderItem(element)) {
+      const result: AgentTreeItem[] = [];
+
+      // Add sub-folders first
+      const subFolders = this.folderManager.getChildFolders('agent', element.folder.id);
+      const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
+      for (const subFolder of sortedSubFolders) {
+        const itemCount = this.folderManager.countItemsRecursive('agent', subFolder.id);
+        const subSubFolderCount = this.folderManager.getChildFolders('agent', subFolder.id).length;
+        if (this.filterText) {
+          const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);
+          if (!folderMatches && itemCount === 0) continue;
+        }
+        result.push(new FolderItem(subFolder, 'agent', itemCount, subSubFolderCount));
+      }
+
+      // Add items directly in this folder
       const folderAgents = this.agents.filter(
         a => this.folderManager.getFolderForItem('agent', a.filePath) === element.folder.id
       );
       const filteredAgents = this.applyFilter(folderAgents);
-      return Promise.resolve(filteredAgents.sort((a, b) => a.name.localeCompare(b.name)));
+      result.push(...filteredAgents.sort((a, b) => a.name.localeCompare(b.name)));
+
+      return Promise.resolve(result);
     }
 
     // Agent items have no children

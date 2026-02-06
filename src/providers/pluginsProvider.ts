@@ -129,7 +129,7 @@ export class PluginsProvider implements
 
     // Root level: return folders + unassigned items
     if (!element) {
-      const folders = this.folderManager.getFolders('plugin');
+      const folders = this.folderManager.getChildFolders('plugin', undefined);
       const result: PluginTreeItem[] = [];
 
       const sortedFolders = [...folders].sort((a, b) => a.name.localeCompare(b.name));
@@ -145,7 +145,9 @@ export class PluginsProvider implements
           );
           if (!folderMatches && !hasMatchingItems) continue;
         }
-        result.push(new FolderItem(folder, 'plugin', itemsInFolder.length));
+        const totalCount = this.folderManager.countItemsRecursive('plugin', folder.id);
+        const subFolderCount = this.folderManager.getChildFolders('plugin', folder.id).length;
+        result.push(new FolderItem(folder, 'plugin', totalCount, subFolderCount));
       }
 
       const unassigned = allPlugins.filter(
@@ -157,12 +159,30 @@ export class PluginsProvider implements
       return result;
     }
 
-    // Folder children
+    // Folder children: return sub-folders + items
     if (isFolderItem(element)) {
+      const result: PluginTreeItem[] = [];
+
+      // Add sub-folders first
+      const subFolders = this.folderManager.getChildFolders('plugin', element.folder.id);
+      const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
+      for (const subFolder of sortedSubFolders) {
+        const itemCount = this.folderManager.countItemsRecursive('plugin', subFolder.id);
+        const subSubFolderCount = this.folderManager.getChildFolders('plugin', subFolder.id).length;
+        if (this.filterText) {
+          const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);
+          if (!folderMatches && itemCount === 0) continue;
+        }
+        result.push(new FolderItem(subFolder, 'plugin', itemCount, subSubFolderCount));
+      }
+
+      // Add items directly in this folder
       const folderPlugins = allPlugins.filter(
         p => this.folderManager.getFolderForItem('plugin', p.name) === element.folder.id
       );
-      return this.applyFilter(folderPlugins).sort((a, b) => a.name.localeCompare(b.name));
+      result.push(...this.applyFilter(folderPlugins).sort((a, b) => a.name.localeCompare(b.name)));
+
+      return result;
     }
 
     return [];

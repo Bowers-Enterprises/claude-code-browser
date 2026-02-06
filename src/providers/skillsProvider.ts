@@ -149,7 +149,7 @@ export class SkillsProvider implements
 
       // Root level: return folders + unassigned items
       if (!element) {
-        const folders = this.folderManager.getFolders('skill');
+        const folders = this.folderManager.getChildFolders('skill', undefined);
         const result: SkillTreeItem[] = [];
 
         // Add folders first (sorted alphabetically)
@@ -169,7 +169,9 @@ export class SkillsProvider implements
               continue;
             }
           }
-          result.push(new FolderItem(folder, 'skill', itemsInFolder.length));
+          const totalCount = this.folderManager.countItemsRecursive('skill', folder.id);
+          const subFolderCount = this.folderManager.getChildFolders('skill', folder.id).length;
+          result.push(new FolderItem(folder, 'skill', totalCount, subFolderCount));
         }
 
         // Add unassigned items
@@ -182,13 +184,31 @@ export class SkillsProvider implements
         return result;
       }
 
-      // Folder children: return items assigned to this folder
+      // Folder children: return sub-folders + items assigned to this folder
       if (isFolderItem(element)) {
+        const result: SkillTreeItem[] = [];
+
+        // Add sub-folders first
+        const subFolders = this.folderManager.getChildFolders('skill', element.folder.id);
+        const sortedSubFolders = [...subFolders].sort((a, b) => a.name.localeCompare(b.name));
+        for (const subFolder of sortedSubFolders) {
+          const itemCount = this.folderManager.countItemsRecursive('skill', subFolder.id);
+          const subSubFolderCount = this.folderManager.getChildFolders('skill', subFolder.id).length;
+          if (this.filterText) {
+            const folderMatches = subFolder.name.toLowerCase().includes(this.filterText);
+            if (!folderMatches && itemCount === 0) continue;
+          }
+          result.push(new FolderItem(subFolder, 'skill', itemCount, subSubFolderCount));
+        }
+
+        // Add items directly in this folder
         const folderSkills = allSkills.filter(
           s => this.folderManager.getFolderForItem('skill', s.filePath) === element.folder.id
         );
         const filteredSkills = this.applyFilter(folderSkills);
-        return filteredSkills.sort((a, b) => a.name.localeCompare(b.name));
+        result.push(...filteredSkills.sort((a, b) => a.name.localeCompare(b.name)));
+
+        return result;
       }
 
       // Skill items have no children
