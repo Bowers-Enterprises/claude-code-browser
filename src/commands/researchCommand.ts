@@ -3,7 +3,9 @@
  */
 
 import * as vscode from 'vscode';
-import { generateResearchPrompt, topicToSkillName } from '../services/researchPromptService';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { generateResearchPrompt, topicToSkillName, getTemplatePath, getDefaultTemplate } from '../services/researchPromptService';
 import { SkillsProvider } from '../providers/skillsProvider';
 
 export function registerResearchCommand(
@@ -36,7 +38,7 @@ export function registerResearchCommand(
       }
 
       // Generate and copy prompt
-      const prompt = generateResearchPrompt(topic, skillName);
+      const prompt = await generateResearchPrompt(topic, skillName);
       await vscode.env.clipboard.writeText(prompt);
 
       vscode.window.showInformationMessage(
@@ -47,6 +49,28 @@ export function registerResearchCommand(
           vscode.commands.executeCommand('workbench.action.terminal.focus');
         }
       });
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('claudeCodeBrowser.editResearchTemplate', async () => {
+      const templatePath = getTemplatePath();
+
+      try {
+        await fs.access(templatePath);
+      } catch {
+        // File doesn't exist, create it with default content
+        const templateDir = path.dirname(templatePath);
+        await fs.mkdir(templateDir, { recursive: true });
+        await fs.writeFile(templatePath, getDefaultTemplate(), 'utf-8');
+      }
+
+      const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(templatePath));
+      await vscode.window.showTextDocument(doc);
+
+      vscode.window.showInformationMessage(
+        'Edit the template and save. Use {{topic}} and {{skillName}} as placeholders.'
+      );
     })
   );
 }

@@ -5,6 +5,15 @@ All notable changes to the Claude Code Browser extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-02-06
+
+### Added
+- **Editable Research Prompt Template**: Customize the prompt used by "Create Skill from Research"
+  - Access via Skills panel overflow menu (three dots) → "Edit Research Prompt Template"
+  - Template stored at `~/.claude/skills/.research-prompt-template.md`
+  - Use `{{topic}}` and `{{skillName}}` as placeholders
+  - Falls back to built-in default if no custom template exists
+
 ## [0.11.1] - 2025-02-05
 
 ### Improved

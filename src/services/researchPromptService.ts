@@ -2,11 +2,21 @@
  * Service for generating research prompts for Claude Code to create skills
  */
 
-export function generateResearchPrompt(topic: string, skillName: string): string {
-  return `# Create a Claude Code Skill: ${topic}
+import * as path from 'path';
+import * as os from 'os';
+import { promises as fs } from 'fs';
+
+const TEMPLATE_PATH = path.join(os.homedir(), '.claude', 'skills', '.research-prompt-template.md');
+
+export function getTemplatePath(): string {
+  return TEMPLATE_PATH;
+}
+
+export function getDefaultTemplate(): string {
+  return `# Create a Claude Code Skill: {{topic}}
 
 ## Your Task
-Research "${topic}" thoroughly and create a high-quality Claude Code skill.
+Research "{{topic}}" thoroughly and create a high-quality Claude Code skill.
 
 ## Research Instructions
 1. **Web Search**: Search for official documentation, best practices, and tutorials
@@ -15,16 +25,16 @@ Research "${topic}" thoroughly and create a high-quality Claude Code skill.
 4. **Identify Triggers**: Determine when this skill should be invoked
 
 ## Output Requirements
-Create a skill at: ~/.claude/skills/${skillName}/SKILL.md
+Create a skill at: ~/.claude/skills/{{skillName}}/SKILL.md
 
 ## SKILL.md Template
 \`\`\`markdown
 ---
-name: ${skillName}
+name: {{skillName}}
 description: [One-line description of what this skill does and when to use it]
 ---
 
-# ${topic}
+# {{topic}}
 
 ## Quick Start
 [Most common use case with example]
@@ -53,6 +63,20 @@ description: [One-line description of what this skill does and when to use it]
 - Includes edge cases and gotchas
 
 Begin researching now.`;
+}
+
+export async function generateResearchPrompt(topic: string, skillName: string): Promise<string> {
+  let template: string;
+
+  try {
+    template = await fs.readFile(TEMPLATE_PATH, 'utf-8');
+  } catch {
+    template = getDefaultTemplate();
+  }
+
+  return template
+    .replace(/\{\{topic\}\}/g, topic)
+    .replace(/\{\{skillName\}\}/g, skillName);
 }
 
 export function topicToSkillName(topic: string): string {
