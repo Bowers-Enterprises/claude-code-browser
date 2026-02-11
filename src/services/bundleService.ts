@@ -42,48 +42,43 @@ export async function exportBundle(skillFolders: string[], outputPath: string): 
  * Import skills from a .zip bundle (preview phase)
  * @param zipPath Absolute path to the .zip file
  * @param targetDir Directory to extract skills into (e.g. ~/.claude/skills/)
- * @returns Array of imported skill names and any conflicts
+ * @returns Array of imported skill names, any conflicts, and the tmpDir path
  */
 export async function importBundle(
   zipPath: string,
   targetDir: string
-): Promise<{ imported: string[]; conflicts: string[] }> {
+): Promise<{ imported: string[]; conflicts: string[]; tmpDir: string }> {
   // Create a temp directory to extract into
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-import-'));
 
-  try {
-    // Extract zip
-    await execFileAsync('unzip', ['-o', zipPath, '-d', tmpDir]);
+  // Extract zip
+  await execFileAsync('unzip', ['-o', zipPath, '-d', tmpDir]);
 
-    // Ensure target directory exists
-    await fs.mkdir(targetDir, { recursive: true });
+  // Ensure target directory exists
+  await fs.mkdir(targetDir, { recursive: true });
 
-    // List extracted folders
-    const entries = await fs.readdir(tmpDir, { withFileTypes: true });
-    const folders = entries.filter(e => e.isDirectory());
+  // List extracted folders
+  const entries = await fs.readdir(tmpDir, { withFileTypes: true });
+  const folders = entries.filter(e => e.isDirectory());
 
-    const imported: string[] = [];
-    const conflicts: string[] = [];
+  const imported: string[] = [];
+  const conflicts: string[] = [];
 
-    for (const folder of folders) {
-      const targetPath = path.join(targetDir, folder.name);
+  for (const folder of folders) {
+    const targetPath = path.join(targetDir, folder.name);
 
-      // Check for conflicts
-      try {
-        await fs.access(targetPath);
-        conflicts.push(folder.name);
-      } catch {
-        // No conflict
-      }
-
-      imported.push(folder.name);
+    // Check for conflicts
+    try {
+      await fs.access(targetPath);
+      conflicts.push(folder.name);
+    } catch {
+      // No conflict
     }
 
-    return { imported, conflicts };
-  } finally {
-    // Clean up temp directory (this is just the preview phase)
-    await fs.rm(tmpDir, { recursive: true, force: true });
+    imported.push(folder.name);
   }
+
+  return { imported, conflicts, tmpDir };
 }
 
 /**
@@ -92,18 +87,22 @@ export async function importBundle(
  * @param targetDir Target directory
  * @param skipConflicts Skill names to skip
  * @param replaceConflicts Skill names to replace
+ * @param existingTmpDir Optional existing tmpDir from preview phase
  */
 export async function completeImport(
   zipPath: string,
   targetDir: string,
   skipConflicts: string[],
-  replaceConflicts: string[]
+  replaceConflicts: string[],
+  existingTmpDir?: string
 ): Promise<{ imported: string[]; skipped: string[] }> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-import-'));
+  const tmpDir = existingTmpDir ?? await fs.mkdtemp(path.join(os.tmpdir(), 'claude-import-'));
 
   try {
-    // Extract zip
-    await execFileAsync('unzip', ['-o', zipPath, '-d', tmpDir]);
+    // Extract zip only if we weren't provided an existing tmpDir
+    if (!existingTmpDir) {
+      await execFileAsync('unzip', ['-o', zipPath, '-d', tmpDir]);
+    }
 
     await fs.mkdir(targetDir, { recursive: true });
 
@@ -156,15 +155,21 @@ export async function completeImport(
  * List the contents of a zip bundle without extracting
  */
 export async function listBundleContents(zipPath: string): Promise<string[]> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-list-'));
-
-  try {
-    await execFileAsync('unzip', ['-o', zipPath, '-d', tmpDir]);
-    const entries = await fs.readdir(tmpDir, { withFileTypes: true });
-    return entries.filter(e => e.isDirectory()).map(e => e.name);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
+  const { stdout } = await execFileAsync('unzip', ['-l', zipPath]);
+  // Parse unzip -l output to extract top-level directory names
+  const names = new Set<string>();
+  for (const line of stdout.split('\n')) {
+    // unzip -l lines look like: "  1234  01-15-2024 14:32   skillname/SKILL.md"
+    const match = line.match(/\s+\d+\s+\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}\s+(.+)/);
+    if (match) {
+      const entryPath = match[1];
+      const topLevel = entryPath.split('/')[0];
+      if (topLevel && !topLevel.startsWith('__')) {
+        names.add(topLevel);
+      }
+    }
   }
+  return [...names];
 }
 
 /**

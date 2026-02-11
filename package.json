@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.13.1",
+  "version": "0.24.0",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -46,27 +46,43 @@
       "claude-code-browser": [
         {
           "id": "claudeCodeBrowser.skills",
-          "name": "Skills"
+          "name": "Skills",
+          "when": "claudeCodeBrowser.panel.skills"
         },
         {
           "id": "claudeCodeBrowser.agents",
-          "name": "Agents"
+          "name": "Agents",
+          "when": "claudeCodeBrowser.panel.agents"
         },
         {
           "id": "claudeCodeBrowser.mcpServers",
-          "name": "MCP Servers"
+          "name": "MCP Servers",
+          "when": "claudeCodeBrowser.panel.mcpServers"
         },
         {
           "id": "claudeCodeBrowser.plugins",
-          "name": "Plugins"
+          "name": "Plugins",
+          "when": "claudeCodeBrowser.panel.plugins"
         },
         {
           "id": "claudeCodeBrowser.commands",
-          "name": "Commands"
+          "name": "Commands",
+          "when": "claudeCodeBrowser.panel.commands"
         },
         {
           "id": "claudeCodeBrowser.marketplace",
-          "name": "Marketplace"
+          "name": "Marketplace",
+          "when": "claudeCodeBrowser.panel.marketplace"
+        },
+        {
+          "id": "claudeCodeBrowser.hookManager",
+          "name": "Hook Manager",
+          "when": "claudeCodeBrowser.panel.hookManager"
+        },
+        {
+          "id": "claudeCodeBrowser.agentTeams",
+          "name": "Agent Teams",
+          "when": "claudeCodeBrowser.panel.agentTeams"
         }
       ]
     },
@@ -274,6 +290,49 @@
         "command": "claudeCodeBrowser.editResearchTemplate",
         "title": "Edit Research Prompt Template",
         "icon": "$(edit)"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.add",
+        "title": "Add Hook",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.edit",
+        "title": "Edit Hook",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.delete",
+        "title": "Delete Hook",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.toggle",
+        "title": "Toggle Hook"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.duplicate",
+        "title": "Duplicate Hook"
+      },
+      {
+        "command": "claudeCodeBrowser.hooks.openFile",
+        "title": "Open Settings File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "claudeCodeBrowser.refreshHookManager",
+        "title": "Refresh Hooks",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.refreshAgentTeams",
+        "title": "Refresh Teams",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.agentTeams.watch",
+        "title": "Watch Agent",
+        "icon": "$(eye)"
       }
     ],
     "menus": {
@@ -315,7 +374,7 @@
         },
         {
           "command": "claudeCodeBrowser.refresh",
-          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands && view != claudeCodeBrowser.marketplace",
+          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands && view != claudeCodeBrowser.marketplace && view != claudeCodeBrowser.hookManager && view != claudeCodeBrowser.agentTeams",
           "group": "navigation@2"
         },
         {
@@ -352,6 +411,21 @@
           "command": "claudeCodeBrowser.marketplace.addSource",
           "when": "view == claudeCodeBrowser.marketplace",
           "group": "navigation@2"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.add",
+          "when": "view == claudeCodeBrowser.hookManager",
+          "group": "navigation@0"
+        },
+        {
+          "command": "claudeCodeBrowser.refreshHookManager",
+          "when": "view == claudeCodeBrowser.hookManager",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.refreshAgentTeams",
+          "when": "view == claudeCodeBrowser.agentTeams",
+          "group": "navigation@1"
         },
         {
           "command": "claudeCodeBrowser.managePanels",
@@ -533,6 +607,46 @@
         {
           "command": "claudeCodeBrowser.previewMcp",
           "when": "viewItem == mcp",
+          "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.edit",
+          "when": "viewItem == hook-item",
+          "group": "0_hook@1"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.duplicate",
+          "when": "viewItem == hook-item",
+          "group": "0_hook@2"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.toggle",
+          "when": "viewItem == hook-item || viewItem == hook-item-disabled",
+          "group": "0_hook@3"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.openFile",
+          "when": "viewItem == hook-item || viewItem == hook-item-disabled || viewItem == hook-event",
+          "group": "1_hookFile@1"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.delete",
+          "when": "viewItem == hook-item || viewItem == hook-item-disabled",
+          "group": "2_destructive@1"
+        },
+        {
+          "command": "claudeCodeBrowser.hooks.add",
+          "when": "viewItem == hook-event",
+          "group": "0_hook@1"
+        },
+        {
+          "command": "claudeCodeBrowser.agentTeams.watch",
+          "when": "viewItem == agent-team-member",
+          "group": "0_agent@1"
+        },
+        {
+          "command": "claudeCodeBrowser.agentTeams.watch",
+          "when": "viewItem == agent-team-member",
           "group": "inline"
         }
       ]

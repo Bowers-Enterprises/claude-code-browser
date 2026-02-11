@@ -8,7 +8,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
-import { SkillItem, SkillsProvider } from '../providers/skillsProvider';
+import { promises as fs } from 'fs';
+import { SkillItem, SkillsProvider, isSkillItem } from '../providers/skillsProvider';
 import { FolderItem, isFolderItem } from '../providers/folderItem';
 import { FolderManager } from '../services/folderManager';
 import { exportBundle, importBundle, completeImport } from '../services/bundleService';
@@ -32,8 +33,8 @@ export function registerBundleCommands(
           folderNames.push(i.folder.name);
           const filePaths = folderManager.getItemsRecursive('skill', i.folder.id);
           skillFolders.push(...filePaths.map(fp => path.dirname(fp)));
-        } else if ((i as SkillItem)?.filePath) {
-          skillFolders.push(path.dirname((i as SkillItem).filePath));
+        } else if (isSkillItem(i)) {
+          skillFolders.push(path.dirname(i.filePath));
         }
       }
 
@@ -138,9 +139,11 @@ export function registerBundleCommands(
         return;
       }
 
+      let tmpDir: string | undefined;
       try {
         // Check for conflicts first
         const preview = await importBundle(zipPath, targetDir);
+        tmpDir = preview.tmpDir;
 
         if (preview.imported.length === 0) {
           vscode.window.showWarningMessage('No skills found in the bundle.');
@@ -178,7 +181,7 @@ export function registerBundleCommands(
             cancellable: false
           },
           async () => {
-            return await completeImport(zipPath, targetDir, skipConflicts, replaceConflicts);
+            return await completeImport(zipPath, targetDir, skipConflicts, replaceConflicts, tmpDir);
           }
         );
 
@@ -191,6 +194,13 @@ export function registerBundleCommands(
         skillsProvider.refresh();
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to import bundle: ${error}`);
+      } finally {
+        // Clean up tmpDir if it exists
+        if (tmpDir) {
+          await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {
+            // Ignore cleanup errors
+          });
+        }
       }
     })
   );

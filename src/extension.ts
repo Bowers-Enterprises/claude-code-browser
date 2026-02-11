@@ -5,6 +5,9 @@ import { McpProvider } from './providers/mcpProvider';
 import { PluginsProvider } from './providers/pluginsProvider';
 import { CommandsProvider, registerCopyCommand, registerCustomPromptCommands } from './providers/commandsProvider';
 import { MarketplaceProvider, registerMarketplaceCommands } from './providers/marketplaceProvider';
+import { HookManagerProvider } from './providers/hookManagerProvider';
+import { AgentTeamProvider, TeamTreeItem } from './providers/agentTeamProvider';
+import { openAgentLiveView } from './providers/agentLiveView';
 import { FolderManager } from './services/folderManager';
 import { CustomPromptsManager } from './services/customPromptsManager';
 import { MarketplaceSourceManager } from './services/marketplaceSourceManager';
@@ -23,7 +26,7 @@ import {
   registerBundleCommands
 } from './commands';
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Claude Code Browser activating...');
 
   try {
@@ -38,6 +41,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Create view visibility manager for panel management
     const viewVisibilityManager = new ViewVisibilityManager(context);
+
+    // Apply saved panel visibility on startup
+    await viewVisibilityManager.applyContextKeys();
 
     // Create providers with folder manager
     const skillsProvider = new SkillsProvider(folderManager);
@@ -63,6 +69,18 @@ export function activate(context: vscode.ExtensionContext): void {
       treeDataProvider: marketplaceProvider
     });
 
+    // Create new dashboard providers
+    const hookManagerProvider = new HookManagerProvider(context.extensionUri);
+    const agentTeamProvider = new AgentTeamProvider();
+
+    // Register new dashboard tree views
+    const hookManagerTreeView = vscode.window.createTreeView('claudeCodeBrowser.hookManager', {
+      treeDataProvider: hookManagerProvider
+    });
+    const agentTeamsTreeView = vscode.window.createTreeView('claudeCodeBrowser.agentTeams', {
+      treeDataProvider: agentTeamProvider
+    });
+
     // Store all TreeView references for easy access
     const treeViews = {
       skills: skillsTreeView,
@@ -73,16 +91,6 @@ export function activate(context: vscode.ExtensionContext): void {
       marketplace: marketplaceTreeView
     };
 
-    // Apply saved visibility preferences
-    const visibility = viewVisibilityManager.getVisibility();
-    for (const [panelId, visible] of Object.entries(visibility)) {
-      const treeView = treeViews[panelId as keyof typeof treeViews];
-      if (treeView && !visible) {
-        // Note: VS Code doesn't have a direct hide API, we'll use a workaround
-        // by setting the tree view's message when hidden
-      }
-    }
-
     // Register tree views for disposal
     context.subscriptions.push(
       skillsTreeView,
@@ -90,7 +98,50 @@ export function activate(context: vscode.ExtensionContext): void {
       mcpTreeView,
       pluginsTreeView,
       commandsTreeView,
-      marketplaceTreeView
+      marketplaceTreeView,
+      hookManagerTreeView,
+      agentTeamsTreeView
+    );
+
+    // Register refresh commands for new panels
+    context.subscriptions.push(
+      vscode.commands.registerCommand('claudeCodeBrowser.refreshHookManager', () => hookManagerProvider.refresh()),
+      vscode.commands.registerCommand('claudeCodeBrowser.refreshAgentTeams', () => agentTeamProvider.refresh()),
+      vscode.commands.registerCommand('claudeCodeBrowser.agentTeams.watch', (item: TeamTreeItem) => {
+        const agent = item?.agentInfo;
+        if (agent) {
+          openAgentLiveView({
+            agentId: agent.agentId,
+            slug: agent.slug,
+            task: agent.fullTask || agent.task,
+            jsonlPath: agent.jsonlPath,
+            sessionId: agent.sessionId,
+            agentType: agent.agentType,
+          });
+        }
+      })
+    );
+
+    // Register hook manager CRUD commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.add', (item?: any) => {
+        hookManagerProvider.addHook(item?.eventName);
+      }),
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.edit', (item: any) => {
+        hookManagerProvider.editHook(item);
+      }),
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.delete', (item: any) => {
+        hookManagerProvider.deleteHook(item);
+      }),
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.toggle', (item: any) => {
+        hookManagerProvider.toggleHook(item);
+      }),
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.duplicate', (item: any) => {
+        hookManagerProvider.duplicateHook(item);
+      }),
+      vscode.commands.registerCommand('claudeCodeBrowser.hooks.openFile', (item: any) => {
+        hookManagerProvider.openSettingsFile(item);
+      })
     );
 
     // Register commands
@@ -154,14 +205,7 @@ export function activate(context: vscode.ExtensionContext): void {
               selectedIds.has(panelId)
             );
           }
-          vscode.window.showInformationMessage(
-            'Panel visibility updated. Some changes may require reload.',
-            'Reload Window'
-          ).then(choice => {
-            if (choice === 'Reload Window') {
-              vscode.commands.executeCommand('workbench.action.reloadWindow');
-            }
-          });
+          vscode.window.showInformationMessage('Panel visibility updated.');
         }
       }),
 

@@ -88,6 +88,7 @@ export class PluginsProvider implements
 
   private filterText: string = '';
   private treeView?: vscode.TreeView<PluginTreeItem>;
+  private plugins: PluginItem[] = [];
 
   constructor(private folderManager: FolderManager) {
     this.folderManager.onDidChange(type => {
@@ -95,6 +96,9 @@ export class PluginsProvider implements
         this._onDidChangeTreeData.fire();
       }
     });
+
+    // Load plugins initially
+    this.loadPlugins();
   }
 
   createTreeView(): vscode.TreeView<PluginTreeItem> {
@@ -116,8 +120,16 @@ export class PluginsProvider implements
     this.refresh();
   }
 
-  refresh(): void {
+  /**
+   * Load plugins from filesystem and update cache
+   */
+  private async loadPlugins(): Promise<void> {
+    this.plugins = await this.getAllPlugins();
     this._onDidChangeTreeData.fire();
+  }
+
+  refresh(): void {
+    this.loadPlugins();
   }
 
   getTreeItem(element: PluginTreeItem): vscode.TreeItem {
@@ -125,7 +137,7 @@ export class PluginsProvider implements
   }
 
   async getChildren(element?: PluginTreeItem): Promise<PluginTreeItem[]> {
-    const allPlugins = await this.getAllPlugins();
+    const allPlugins = this.plugins;
     const validKeys = new Set(allPlugins.map(p => p.name));
 
     // Root level: return folders + unassigned items

@@ -6,12 +6,12 @@
 import * as vscode from 'vscode';
 
 const STORAGE_KEY = 'claudeCodeBrowser.viewVisibility';
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 /**
  * Panel identifiers
  */
-export type PanelId = 'skills' | 'agents' | 'mcpServers' | 'plugins' | 'commands' | 'marketplace';
+export type PanelId = 'skills' | 'agents' | 'mcpServers' | 'plugins' | 'commands' | 'marketplace' | 'hookManager' | 'agentTeams';
 
 /**
  * Human-readable labels for each panel
@@ -22,7 +22,9 @@ export const PANEL_LABELS: Record<PanelId, string> = {
   mcpServers: 'MCP Servers',
   plugins: 'Plugins',
   commands: 'Commands',
-  marketplace: 'Marketplace'
+  marketplace: 'Marketplace',
+  hookManager: 'Hook Manager',
+  agentTeams: 'Agent Teams'
 };
 
 /**
@@ -42,7 +44,9 @@ const DEFAULT_VISIBILITY: Record<PanelId, boolean> = {
   mcpServers: true,
   plugins: true,
   commands: true,
-  marketplace: true
+  marketplace: true,
+  hookManager: true,
+  agentTeams: true
 };
 
 /**
@@ -77,6 +81,11 @@ export class ViewVisibilityManager {
     const state = this.getState();
     state.visibility[panelId] = visible;
     await this.saveState(state);
+    await vscode.commands.executeCommand(
+      'setContext',
+      `claudeCodeBrowser.panel.${panelId}`,
+      visible
+    );
     this._onDidChange.fire();
   }
 
@@ -87,7 +96,22 @@ export class ViewVisibilityManager {
     const state = this.getState();
     state.visibility = { ...DEFAULT_VISIBILITY };
     await this.saveState(state);
+    await this.applyContextKeys();
     this._onDidChange.fire();
+  }
+
+  /**
+   * Apply visibility state to VS Code context keys (controls when clauses)
+   */
+  async applyContextKeys(): Promise<void> {
+    const visibility = this.getVisibility();
+    for (const [panelId, visible] of Object.entries(visibility)) {
+      await vscode.commands.executeCommand(
+        'setContext',
+        `claudeCodeBrowser.panel.${panelId}`,
+        visible
+      );
+    }
   }
 
   /**
@@ -96,7 +120,8 @@ export class ViewVisibilityManager {
   private getState(): ViewVisibilityState {
     const state = this.context.globalState.get<ViewVisibilityState>(STORAGE_KEY);
 
-    if (!state) {
+    if (!state || state.version < CURRENT_VERSION) {
+      // Reset to defaults on version upgrade or first run
       return {
         version: CURRENT_VERSION,
         visibility: { ...DEFAULT_VISIBILITY }

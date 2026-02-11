@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode';
+import { randomUUID } from 'crypto';
 
 const STORAGE_KEY = 'claudeCodeBrowser.customPrompts';
 const CURRENT_VERSION = 1;
@@ -212,6 +213,6 @@ export class CustomPromptsManager {
    * Generate a unique ID
    */
   private generateId(): string {
-    return `prompt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `prompt_${randomUUID()}`;
   }
 }

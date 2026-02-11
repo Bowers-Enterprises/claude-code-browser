@@ -93,6 +93,7 @@ export class McpProvider implements
 
   private filterText: string = '';
   private treeView?: vscode.TreeView<McpTreeItem>;
+  private mcpItems: McpItem[] = [];
 
   constructor(private folderManager: FolderManager) {
     this.folderManager.onDidChange(type => {
@@ -100,6 +101,9 @@ export class McpProvider implements
         this._onDidChangeTreeData.fire();
       }
     });
+
+    // Load MCP items initially
+    this.loadMcpItems();
   }
 
   createTreeView(): vscode.TreeView<McpTreeItem> {
@@ -121,8 +125,16 @@ export class McpProvider implements
     this.refresh();
   }
 
-  refresh(): void {
+  /**
+   * Load MCP items from filesystem and update cache
+   */
+  private async loadMcpItems(): Promise<void> {
+    this.mcpItems = await this.getAllMcpItems();
     this._onDidChangeTreeData.fire();
+  }
+
+  refresh(): void {
+    this.loadMcpItems();
   }
 
   getTreeItem(element: McpTreeItem): vscode.TreeItem {
@@ -130,8 +142,8 @@ export class McpProvider implements
   }
 
   async getChildren(element?: McpTreeItem): Promise<McpTreeItem[]> {
-    // Get all MCP items first
-    const allItems = await this.getAllMcpItems();
+    // Use cached MCP items
+    const allItems = this.mcpItems;
     const validKeys = new Set(allItems.map(m => m.filePath + ':' + m.name));
 
     // Root level: return folders + unassigned items
@@ -252,13 +264,15 @@ export class McpProvider implements
       items.push(this.createMcpItem(server, 'global', globalConfigPath));
     }
 
-    // Load project MCP servers
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (workspaceFolder) {
-      const projectConfigPath = path.join(workspaceFolder.uri.fsPath, '.claude', '.mcp.json');
-      const projectServers = await parseMcpConfig(projectConfigPath);
-      for (const server of projectServers) {
-        items.push(this.createMcpItem(server, 'project', projectConfigPath));
+    // Load project MCP servers from all workspace folders
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders) {
+      for (const folder of workspaceFolders) {
+        const projectConfigPath = path.join(folder.uri.fsPath, '.claude', '.mcp.json');
+        const projectServers = await parseMcpConfig(projectConfigPath);
+        for (const server of projectServers) {
+          items.push(this.createMcpItem(server, 'project', projectConfigPath));
+        }
       }
     }
 

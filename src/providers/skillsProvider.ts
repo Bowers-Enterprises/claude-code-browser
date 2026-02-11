@@ -87,6 +87,7 @@ export class SkillsProvider implements
 
   private filterText: string = '';
   private treeView?: vscode.TreeView<SkillTreeItem>;
+  private skills: SkillItem[] = [];
 
   constructor(private folderManager: FolderManager) {
     // Listen for folder changes
@@ -95,6 +96,9 @@ export class SkillsProvider implements
         this.refresh();
       }
     });
+
+    // Load skills initially
+    this.loadSkills();
   }
 
   /**
@@ -126,10 +130,18 @@ export class SkillsProvider implements
   }
 
   /**
-   * Refresh the tree view by firing the change event
+   * Load skills from filesystem and update cache
+   */
+  private async loadSkills(): Promise<void> {
+    this.skills = await this.getAllSkills();
+    this._onDidChangeTreeData.fire();
+  }
+
+  /**
+   * Refresh the tree view by reloading skills
    */
   refresh(): void {
-    this._onDidChangeTreeData.fire();
+    this.loadSkills();
   }
 
   /**
@@ -144,8 +156,8 @@ export class SkillsProvider implements
    */
   async getChildren(element?: SkillTreeItem): Promise<SkillTreeItem[]> {
     try {
-      // Get all skills first
-      const allSkills = await this.getAllSkills();
+      // Use cached skills
+      const allSkills = this.skills;
       const validKeys = new Set(allSkills.map(s => s.filePath));
 
       // Root level: return folders + unassigned items

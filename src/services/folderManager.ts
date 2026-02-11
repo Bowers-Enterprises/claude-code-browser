@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { randomUUID } from 'crypto';
 import { FolderState, VirtualFolder, ResourceType, FolderAssignments } from '../types';
 
 /**
@@ -17,6 +18,7 @@ export class FolderManager {
 
   constructor(private context: vscode.ExtensionContext) {
     this.state = this.loadState();
+    this.validateState();
   }
 
   /**
@@ -57,6 +59,46 @@ export class FolderManager {
   }
 
   /**
+   * Validate and repair state after loading from storage
+   */
+  private validateState(): void {
+    for (const resourceType of ['skill', 'agent', 'mcp', 'plugin'] as ResourceType[]) {
+      const folders = this.state.folders[resourceType] ?? [];
+      const folderMap = new Map(folders.map(f => [f.id, f]));
+
+      // Fix orphan folders (parentId points to non-existent folder)
+      for (const folder of folders) {
+        if (folder.parentId && !folderMap.has(folder.parentId)) {
+          folder.parentId = undefined;
+        }
+      }
+
+      // Detect and break cycles in parentId chains
+      for (const folder of folders) {
+        const visited = new Set<string>();
+        let current = folder.parentId;
+        visited.add(folder.id);
+        while (current) {
+          if (visited.has(current)) {
+            folder.parentId = undefined;
+            break;
+          }
+          visited.add(current);
+          current = folderMap.get(current)?.parentId;
+        }
+      }
+
+      // Remove assignments to non-existent folders
+      const assignments = this.state.assignments[resourceType] ?? {};
+      for (const [key, folderId] of Object.entries(assignments)) {
+        if (!folderMap.has(folderId)) {
+          delete assignments[key];
+        }
+      }
+    }
+  }
+
+  /**
    * Get all folders for a resource type
    */
   getFolders(resourceType: ResourceType): VirtualFolder[] {
@@ -91,7 +133,13 @@ export class FolderManager {
   /**
    * Count all items assigned to a folder and all its descendant sub-folders
    */
-  countItemsRecursive(resourceType: ResourceType, folderId: string, validKeys?: Set<string>): number {
+  countItemsRecursive(resourceType: ResourceType, folderId: string, validKeys?: Set<string>, visited = new Set<string>()): number {
+    // Cycle detection
+    if (visited.has(folderId)) {
+      return 0;
+    }
+    visited.add(folderId);
+
     // Count direct items, optionally filtering to only items that actually exist
     const directItems = this.getItemsInFolder(resourceType, folderId);
     let count = validKeys
@@ -101,7 +149,7 @@ export class FolderManager {
     // Add items from child folders recursively
     const childFolders = this.getChildFolders(resourceType, folderId);
     for (const child of childFolders) {
-      count += this.countItemsRecursive(resourceType, child.id, validKeys);
+      count += this.countItemsRecursive(resourceType, child.id, validKeys, visited);
     }
 
     return count;
@@ -110,11 +158,17 @@ export class FolderManager {
   /**
    * Get all item file paths assigned to a folder and all its descendant sub-folders
    */
-  getItemsRecursive(resourceType: ResourceType, folderId: string): string[] {
+  getItemsRecursive(resourceType: ResourceType, folderId: string, visited = new Set<string>()): string[] {
+    // Cycle detection
+    if (visited.has(folderId)) {
+      return [];
+    }
+    visited.add(folderId);
+
     const items = [...this.getItemsInFolder(resourceType, folderId)];
     const childFolders = this.getChildFolders(resourceType, folderId);
     for (const child of childFolders) {
-      items.push(...this.getItemsRecursive(resourceType, child.id));
+      items.push(...this.getItemsRecursive(resourceType, child.id, visited));
     }
     return items;
   }
@@ -153,23 +207,28 @@ export class FolderManager {
    * Delete a folder. Items in the folder return to root level.
    */
   async deleteFolder(resourceType: ResourceType, folderId: string): Promise<void> {
+    this._deleteFolderRecursive(resourceType, folderId);
+    await this.saveState();
+    this._onDidChange.fire(resourceType);
+  }
+
+  /**
+   * Recursively delete a folder and all its descendants
+   */
+  private _deleteFolderRecursive(resourceType: ResourceType, folderId: string, visited = new Set<string>()): void {
+    // Cycle detection
+    if (visited.has(folderId)) {
+      return;
+    }
+    visited.add(folderId);
+
     // Recursively delete child folders first
     const childFolders = this.getChildFolders(resourceType, folderId);
     for (const child of childFolders) {
-      // Remove assignments for child folder (items return to root)
-      const assignments = this.state.assignments[resourceType];
-      for (const [key, value] of Object.entries(assignments)) {
-        if (value === child.id) {
-          delete assignments[key];
-        }
-      }
-      // Remove child folder definition
-      this.state.folders[resourceType] = this.state.folders[resourceType].filter(
-        f => f.id !== child.id
-      );
+      this._deleteFolderRecursive(resourceType, child.id, visited);
     }
 
-    // Remove assignments for this folder
+    // Remove assignments for this folder (items return to root)
     const assignments = this.state.assignments[resourceType];
     for (const [key, value] of Object.entries(assignments)) {
       if (value === folderId) {
@@ -181,9 +240,6 @@ export class FolderManager {
     this.state.folders[resourceType] = this.state.folders[resourceType].filter(
       f => f.id !== folderId
     );
-
-    await this.saveState();
-    this._onDidChange.fire(resourceType);
   }
 
   /**
@@ -228,11 +284,6 @@ export class FolderManager {
    * Generate a unique ID for a folder
    */
   private generateId(): string {
-    // Simple UUID v4 implementation without external dependency
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    return randomUUID();
   }
 }

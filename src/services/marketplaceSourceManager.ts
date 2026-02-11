@@ -5,6 +5,7 @@
  */
 
 import * as vscode from 'vscode';
+import { randomUUID } from 'crypto';
 
 const STORAGE_KEY = 'claudeCodeBrowser.marketplaceSources';
 const CURRENT_VERSION = 1;
@@ -225,7 +226,7 @@ export class MarketplaceSourceManager {
    * Generate a unique ID
    */
   private generateId(): string {
-    return `source_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `source_${randomUUID()}`;
   }
 }
 

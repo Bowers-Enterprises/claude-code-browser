@@ -10,10 +10,23 @@ import * as path from 'path';
 import * as os from 'os';
 import { promises as fs } from 'fs';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { MarketplaceSourceManager, MarketplaceSource, SkillDefinition, fetchSkillsFromGitHubRepo } from '../services/marketplaceSourceManager';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Check if a skill is installed (utility function for race-free status checks)
+ */
+async function isSkillInstalled(skillId: string): Promise<boolean> {
+  const installPath = path.join(os.homedir(), '.claude', 'skills', skillId);
+  try {
+    await fs.access(installPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Represents a skill available in the marketplace
@@ -61,36 +74,6 @@ const STAFF_PICKS: MarketplaceSkill[] = [
     category: "testing",
     stars: 1600,
     // No skillPath - repo IS the skill
-  },
-  {
-    id: "test-driven-development",
-    name: "Test-Driven Development",
-    description: "RED-GREEN-REFACTOR cycle guidance with anti-patterns for testable code",
-    author: "obra",
-    githubUrl: "https://github.com/anthropics/claude-code-superpowers",
-    category: "testing",
-    stars: 800,
-    skillPath: "test-driven-development",
-  },
-  {
-    id: "systematic-debugging",
-    name: "Systematic Debugging",
-    description: "Four-phase root cause analysis methodology for complex bugs",
-    author: "obra",
-    githubUrl: "https://github.com/anthropics/claude-code-superpowers",
-    category: "code-quality",
-    stars: 800,
-    skillPath: "systematic-debugging",
-  },
-  {
-    id: "static-analysis",
-    name: "Static Analysis Toolkit",
-    description: "Security-focused static analysis using CodeQL, Semgrep for vulnerability detection",
-    author: "trailofbits",
-    githubUrl: "https://github.com/trailofbits/claude-code-skills",
-    category: "code-quality",
-    stars: 750,
-    skillPath: "static-analysis",
   },
   {
     id: "markdown-tools",
@@ -143,26 +126,6 @@ const STAFF_PICKS: MarketplaceSkill[] = [
     skillPath: "qa-expert",
   },
   {
-    id: "differential-review",
-    name: "Differential Security Review",
-    description: "Security-focused code review with git history analysis",
-    author: "trailofbits",
-    githubUrl: "https://github.com/trailofbits/claude-code-skills",
-    category: "code-quality",
-    stars: 750,
-    skillPath: "differential-review",
-  },
-  {
-    id: "subagent-development",
-    name: "Subagent-Driven Development",
-    description: "Enable concurrent subagent workflows with two-stage code review",
-    author: "obra",
-    githubUrl: "https://github.com/anthropics/claude-code-superpowers",
-    category: "productivity",
-    stars: 800,
-    skillPath: "subagent-driven-development",
-  },
-  {
     id: "skill-creator",
     name: "Skill Creator",
     description: "Meta-skill for building and packaging custom Claude Code skills",
@@ -181,16 +144,6 @@ const STAFF_PICKS: MarketplaceSkill[] = [
     category: "documentation",
     stars: 1200,
     skillPath: "cli-demo-generator",
-  },
-  {
-    id: "insecure-defaults",
-    name: "Insecure Defaults Detector",
-    description: "Detect hardcoded credentials and fail-open security patterns",
-    author: "trailofbits",
-    githubUrl: "https://github.com/trailofbits/claude-code-skills",
-    category: "code-quality",
-    stars: 750,
-    skillPath: "insecure-defaults",
   },
 ];
 
@@ -249,7 +202,7 @@ export class SourceItem extends vscode.TreeItem {
  * Tree item for a marketplace skill
  */
 export class MarketplaceSkillItem extends vscode.TreeItem {
-  constructor(public readonly skill: MarketplaceSkill) {
+  constructor(public readonly skill: MarketplaceSkill, isInstalled: boolean) {
     super(skill.name, vscode.TreeItemCollapsibleState.None);
 
     this.description = `by ${skill.author}`;
@@ -265,22 +218,13 @@ export class MarketplaceSkillItem extends vscode.TreeItem {
     this.tooltip.appendMarkdown(`[View on GitHub](${skill.githubUrl})`);
 
     // Icon based on installation status
-    this.iconPath = new vscode.ThemeIcon('cloud-download');
-    this.contextValue = 'marketplace-skill';
-
-    // Check if already installed (async check happens in provider)
-    this.checkInstallationStatus();
-  }
-
-  private async checkInstallationStatus(): Promise<void> {
-    const installPath = path.join(os.homedir(), '.claude', 'skills', this.skill.id);
-    try {
-      await fs.access(installPath);
+    if (isInstalled) {
       this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
       this.contextValue = 'marketplace-skill-installed';
       this.description = `${this.description} (Installed)`;
-    } catch {
-      // Not installed - keep default icon
+    } else {
+      this.iconPath = new vscode.ThemeIcon('cloud-download');
+      this.contextValue = 'marketplace-skill';
     }
   }
 }
@@ -289,7 +233,7 @@ export class MarketplaceSkillItem extends vscode.TreeItem {
  * Tree item for skills fetched from user sources
  */
 export class SourceSkillItem extends vscode.TreeItem {
-  constructor(public readonly skill: SkillDefinition) {
+  constructor(public readonly skill: SkillDefinition, isInstalled: boolean) {
     super(skill.name, vscode.TreeItemCollapsibleState.None);
 
     this.description = skill.author ? `by ${skill.author}` : '';
@@ -304,22 +248,13 @@ export class SourceSkillItem extends vscode.TreeItem {
     this.tooltip.appendMarkdown(`[View on GitHub](${skill.githubUrl})`);
 
     // Icon based on installation status
-    this.iconPath = new vscode.ThemeIcon('cloud-download');
-    this.contextValue = 'marketplace-source-skill';
-
-    // Check if already installed (async check happens in provider)
-    this.checkInstallationStatus();
-  }
-
-  private async checkInstallationStatus(): Promise<void> {
-    const installPath = path.join(os.homedir(), '.claude', 'skills', this.skill.id);
-    try {
-      await fs.access(installPath);
+    if (isInstalled) {
       this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('charts.green'));
       this.contextValue = 'marketplace-source-skill-installed';
       this.description = `${this.description} (Installed)`;
-    } catch {
-      // Not installed - keep default icon
+    } else {
+      this.iconPath = new vscode.ThemeIcon('cloud-download');
+      this.contextValue = 'marketplace-source-skill';
     }
   }
 }
@@ -424,7 +359,11 @@ export class MarketplaceProvider implements vscode.TreeDataProvider<MarketplaceT
         return a.name.localeCompare(b.name);
       });
 
-      return sorted.map(skill => new MarketplaceSkillItem(skill));
+      const items = await Promise.all(sorted.map(async skill => {
+        const installed = await isSkillInstalled(skill.id);
+        return new MarketplaceSkillItem(skill, installed);
+      }));
+      return items;
     }
 
     // Source level: show skills from that source
@@ -436,7 +375,11 @@ export class MarketplaceProvider implements vscode.TreeDataProvider<MarketplaceT
         // Sort by name
         const sorted = filteredSkills.sort((a, b) => a.name.localeCompare(b.name));
 
-        return sorted.map(skill => new SourceSkillItem(skill));
+        const items = await Promise.all(sorted.map(async skill => {
+          const installed = await isSkillInstalled(skill.id);
+          return new SourceSkillItem(skill, installed);
+        }));
+        return items;
       } catch (error) {
         console.error(`Error loading skills for source ${element.source.name}:`, error);
         vscode.window.showErrorMessage(`Failed to load skills from ${element.source.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -590,7 +533,7 @@ async function installSkill(skill: MarketplaceSkill | SkillDefinition): Promise<
         progress.report({ message: 'Cloning repository...' });
 
         // Clone the repository
-        await execAsync(`git clone --depth 1 "${skill.githubUrl}" "${tempDir}"`, {
+        await execFileAsync('git', ['clone', '--depth', '1', skill.githubUrl, tempDir], {
           timeout: 60000 // 60 second timeout
         });
 
