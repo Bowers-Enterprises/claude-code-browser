@@ -7,6 +7,7 @@ import { CommandsProvider, registerCopyCommand, registerCustomPromptCommands } f
 import { MarketplaceProvider, registerMarketplaceCommands } from './providers/marketplaceProvider';
 import { HookManagerProvider } from './providers/hookManagerProvider';
 import { AgentTeamProvider, TeamTreeItem } from './providers/agentTeamProvider';
+import { WorktreeProvider } from './providers/worktreeProvider';
 import { openAgentLiveView } from './providers/agentLiveView';
 import { FolderManager } from './services/folderManager';
 import { CustomPromptsManager } from './services/customPromptsManager';
@@ -23,7 +24,8 @@ import {
   registerAgentCommands,
   registerMcpCommands,
   registerResearchCommand,
-  registerBundleCommands
+  registerBundleCommands,
+  registerWorktreeCommands
 } from './commands';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -72,6 +74,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Create new dashboard providers
     const hookManagerProvider = new HookManagerProvider(context.extensionUri);
     const agentTeamProvider = new AgentTeamProvider();
+    const worktreeProvider = new WorktreeProvider();
 
     // Register new dashboard tree views
     const hookManagerTreeView = vscode.window.createTreeView('claudeCodeBrowser.hookManager', {
@@ -79,6 +82,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
     const agentTeamsTreeView = vscode.window.createTreeView('claudeCodeBrowser.agentTeams', {
       treeDataProvider: agentTeamProvider
+    });
+    const worktreeTreeView = vscode.window.createTreeView('claudeCodeBrowser.worktrees', {
+      treeDataProvider: worktreeProvider
     });
 
     // Store all TreeView references for easy access
@@ -100,13 +106,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       commandsTreeView,
       marketplaceTreeView,
       hookManagerTreeView,
-      agentTeamsTreeView
+      agentTeamsTreeView,
+      worktreeTreeView
     );
 
     // Register refresh commands for new panels
     context.subscriptions.push(
       vscode.commands.registerCommand('claudeCodeBrowser.refreshHookManager', () => hookManagerProvider.refresh()),
       vscode.commands.registerCommand('claudeCodeBrowser.refreshAgentTeams', () => agentTeamProvider.refresh()),
+      vscode.commands.registerCommand('claudeCodeBrowser.refreshWorktrees', () => worktreeProvider.refresh()),
       vscode.commands.registerCommand('claudeCodeBrowser.agentTeams.watch', (item: TeamTreeItem) => {
         const agent = item?.agentInfo;
         if (agent) {
@@ -166,6 +174,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerMarketplaceCommands(context, marketplaceProvider);
     registerResearchCommand(context, skillsProvider);
     registerBundleCommands(context, skillsProvider, folderManager);
+    registerWorktreeCommands(context, worktreeProvider);
+
+    // Dispose worktree provider on deactivation
+    context.subscriptions.push({ dispose: () => worktreeProvider.dispose() });
 
     // Create skill watcher for detecting new skills
     const skillWatcher = new SkillWatcherService(context);

@@ -6,12 +6,12 @@
 import * as vscode from 'vscode';
 
 const STORAGE_KEY = 'claudeCodeBrowser.viewVisibility';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 /**
  * Panel identifiers
  */
-export type PanelId = 'skills' | 'agents' | 'mcpServers' | 'plugins' | 'commands' | 'marketplace' | 'hookManager' | 'agentTeams';
+export type PanelId = 'skills' | 'agents' | 'mcpServers' | 'plugins' | 'commands' | 'marketplace' | 'hookManager' | 'agentTeams' | 'worktrees';
 
 /**
  * Human-readable labels for each panel
@@ -24,7 +24,8 @@ export const PANEL_LABELS: Record<PanelId, string> = {
   commands: 'Commands',
   marketplace: 'Marketplace',
   hookManager: 'Hook Manager',
-  agentTeams: 'Agent Teams'
+  agentTeams: 'Agent Teams',
+  worktrees: 'Worktrees'
 };
 
 /**
@@ -46,7 +47,8 @@ const DEFAULT_VISIBILITY: Record<PanelId, boolean> = {
   commands: true,
   marketplace: true,
   hookManager: true,
-  agentTeams: true
+  agentTeams: true,
+  worktrees: true
 };
 
 /**

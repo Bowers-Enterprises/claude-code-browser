@@ -2,7 +2,7 @@
   "name": "claude-code-browser",
   "displayName": "Claude Code Browser",
   "description": "Browse and invoke Claude Code skills, agents, MCP servers, and plugins",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "publisher": "chase-bowers",
   "license": "MIT",
   "repository": {
@@ -83,6 +83,11 @@
           "id": "claudeCodeBrowser.agentTeams",
           "name": "Agent Teams",
           "when": "claudeCodeBrowser.panel.agentTeams"
+        },
+        {
+          "id": "claudeCodeBrowser.worktrees",
+          "name": "Worktrees",
+          "when": "claudeCodeBrowser.panel.worktrees"
         }
       ]
     },
@@ -333,6 +338,39 @@
         "command": "claudeCodeBrowser.agentTeams.watch",
         "title": "Watch Agent",
         "icon": "$(eye)"
+      },
+      {
+        "command": "claudeCodeBrowser.worktree.create",
+        "title": "Create Worktree",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeCodeBrowser.worktree.resume",
+        "title": "Resume Worktree"
+      },
+      {
+        "command": "claudeCodeBrowser.worktree.openInEditor",
+        "title": "Open in New Window",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "claudeCodeBrowser.worktree.delete",
+        "title": "Delete Worktree",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "claudeCodeBrowser.worktree.launchTask",
+        "title": "Launch Parallel Task",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "claudeCodeBrowser.refreshWorktrees",
+        "title": "Refresh Worktrees",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeCodeBrowser.openSkillFile",
+        "title": "Open File"
       }
     ],
     "menus": {
@@ -374,7 +412,7 @@
         },
         {
           "command": "claudeCodeBrowser.refresh",
-          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands && view != claudeCodeBrowser.marketplace && view != claudeCodeBrowser.hookManager && view != claudeCodeBrowser.agentTeams",
+          "when": "view =~ /claudeCodeBrowser\\./ && view != claudeCodeBrowser.commands && view != claudeCodeBrowser.marketplace && view != claudeCodeBrowser.hookManager && view != claudeCodeBrowser.agentTeams && view != claudeCodeBrowser.worktrees",
           "group": "navigation@2"
         },
         {
@@ -426,6 +464,21 @@
           "command": "claudeCodeBrowser.refreshAgentTeams",
           "when": "view == claudeCodeBrowser.agentTeams",
           "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.create",
+          "when": "view == claudeCodeBrowser.worktrees",
+          "group": "navigation@0"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.launchTask",
+          "when": "view == claudeCodeBrowser.worktrees",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeCodeBrowser.refreshWorktrees",
+          "when": "view == claudeCodeBrowser.worktrees",
+          "group": "navigation@2"
         },
         {
           "command": "claudeCodeBrowser.managePanels",
@@ -545,6 +598,16 @@
           "group": "0_mcp@1"
         },
         {
+          "command": "claudeCodeBrowser.revealInFinder",
+          "when": "viewItem == skill-file || viewItem == skill-directory",
+          "group": "1_manage@1"
+        },
+        {
+          "command": "claudeCodeBrowser.copyPath",
+          "when": "viewItem == skill-file || viewItem == skill-directory",
+          "group": "1_manage@2"
+        },
+        {
           "command": "claudeCodeBrowser.moveToFolder",
           "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@1"
@@ -647,6 +710,26 @@
         {
           "command": "claudeCodeBrowser.agentTeams.watch",
           "when": "viewItem == agent-team-member",
+          "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.resume",
+          "when": "viewItem == worktree || viewItem == worktree-active",
+          "group": "0_worktree@1"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.openInEditor",
+          "when": "viewItem == worktree || viewItem == worktree-active",
+          "group": "0_worktree@2"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.delete",
+          "when": "viewItem == worktree || viewItem == worktree-active",
+          "group": "2_destructive@1"
+        },
+        {
+          "command": "claudeCodeBrowser.worktree.openInEditor",
+          "when": "viewItem == worktree || viewItem == worktree-active",
           "group": "inline"
         }
       ]

@@ -123,6 +123,13 @@ export class FolderManager {
   /**
    * Get all items assigned to a specific folder
    */
+  /**
+   * Get all assignments for a resource type (path → folderId map)
+   */
+  getAssignments(resourceType: ResourceType): Record<string, string> {
+    return { ...(this.state.assignments[resourceType] ?? {}) };
+  }
+
   getItemsInFolder(resourceType: ResourceType, folderId: string): string[] {
     const assignments = this.state.assignments[resourceType] ?? {};
     return Object.entries(assignments)

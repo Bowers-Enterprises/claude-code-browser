@@ -6,8 +6,8 @@
  * 2. Fallback: folder name as skill name, first paragraph as description
  */
 
-import * as path from 'path';
-import { SkillMetadata } from '../types';
+import * as path from "path";
+import { SkillMetadata } from "../types";
 
 /**
  * YAML frontmatter regex pattern
@@ -22,9 +22,11 @@ const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---/;
  * @param yamlContent - Raw YAML content without delimiters
  * @returns Parsed key-value object
  */
-function parseSimpleYaml(yamlContent: string): Record<string, string | string[]> {
+function parseSimpleYaml(
+  yamlContent: string,
+): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = {};
-  const lines = yamlContent.split('\n');
+  const lines = yamlContent.split("\n");
   let currentKey: string | null = null;
   let currentArray: string[] = [];
   let inArray = false;
@@ -51,7 +53,7 @@ function parseSimpleYaml(yamlContent: string): Record<string, string | string[]>
       const key = keyValueMatch[1].trim();
       const value = keyValueMatch[2].trim();
 
-      if (value === '' || value === '|') {
+      if (value === "" || value === "|") {
         // This might be the start of an array or multiline value
         currentKey = key;
         inArray = true;
@@ -79,7 +81,7 @@ function parseSimpleYaml(yamlContent: string): Record<string, string | string[]>
  * @returns First paragraph text or empty string
  */
 function extractFirstParagraph(content: string): string {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   let paragraphLines: string[] = [];
   let inParagraph = false;
 
@@ -87,12 +89,12 @@ function extractFirstParagraph(content: string): string {
     const trimmedLine = line.trim();
 
     // Skip empty lines before paragraph starts
-    if (!inParagraph && trimmedLine === '') {
+    if (!inParagraph && trimmedLine === "") {
       continue;
     }
 
     // Skip headings
-    if (trimmedLine.startsWith('#')) {
+    if (trimmedLine.startsWith("#")) {
       // If we were collecting a paragraph, we're done
       if (inParagraph && paragraphLines.length > 0) {
         break;
@@ -109,18 +111,18 @@ function extractFirstParagraph(content: string): string {
     }
 
     // If we hit an empty line while in a paragraph, we're done
-    if (inParagraph && trimmedLine === '') {
+    if (inParagraph && trimmedLine === "") {
       break;
     }
 
     // Collect paragraph lines
-    if (trimmedLine !== '') {
+    if (trimmedLine !== "") {
       inParagraph = true;
       paragraphLines.push(trimmedLine);
     }
   }
 
-  return paragraphLines.join(' ').trim();
+  return paragraphLines.join(" ").trim();
 }
 
 /**
@@ -130,7 +132,10 @@ function extractFirstParagraph(content: string): string {
  * @param filePath - Full path to the SKILL.md file
  * @returns SkillMetadata object or null if parsing fails
  */
-export function parseSkillFile(content: string, filePath: string): SkillMetadata | null {
+export function parseSkillFile(
+  content: string,
+  filePath: string,
+): SkillMetadata | null {
   try {
     // Get folder name as fallback for skill name
     const folderPath = path.dirname(filePath);
@@ -144,13 +149,15 @@ export function parseSkillFile(content: string, filePath: string): SkillMetadata
       const yamlContent = frontmatterMatch[1];
       const parsed = parseSimpleYaml(yamlContent);
 
-      const name = (parsed['name'] as string) || folderName;
-      const description = (parsed['description'] as string) || '';
-      const model = parsed['model'] as string | undefined;
-      const allowedTools = parsed['allowed-tools'] as string[] | undefined;
+      const name = (parsed["name"] as string) || folderName;
+      const description = (parsed["description"] as string) || "";
+      const model = parsed["model"] as string | undefined;
+      const allowedTools = parsed["allowed-tools"] as string[] | undefined;
 
       if (!name) {
-        console.warn(`[skillParser] No name found in frontmatter or folder for: ${filePath}`);
+        console.warn(
+          `[skillParser] No name found in frontmatter or folder for: ${filePath}`,
+        );
         return null;
       }
 
@@ -159,25 +166,32 @@ export function parseSkillFile(content: string, filePath: string): SkillMetadata
         description,
         model,
         allowedTools,
-        filePath
+        filePath,
+        hasCompanionFiles: false,
       };
     } else {
       // Fallback: use folder name and first paragraph
       const description = extractFirstParagraph(content);
 
       if (!folderName) {
-        console.warn(`[skillParser] Could not determine skill name for: ${filePath}`);
+        console.warn(
+          `[skillParser] Could not determine skill name for: ${filePath}`,
+        );
         return null;
       }
 
       return {
         name: folderName,
         description,
-        filePath
+        filePath,
+        hasCompanionFiles: false,
       };
     }
   } catch (error) {
-    console.warn(`[skillParser] Failed to parse skill file: ${filePath}`, error);
+    console.warn(
+      `[skillParser] Failed to parse skill file: ${filePath}`,
+      error,
+    );
     return null;
   }
 }
@@ -188,6 +202,12 @@ export function parseSkillFile(content: string, filePath: string): SkillMetadata
  * @param metadata - Parsed skill metadata
  * @returns true if metadata is valid
  */
-export function isValidSkillMetadata(metadata: SkillMetadata | null): metadata is SkillMetadata {
-  return metadata !== null && typeof metadata.name === 'string' && metadata.name.length > 0;
+export function isValidSkillMetadata(
+  metadata: SkillMetadata | null,
+): metadata is SkillMetadata {
+  return (
+    metadata !== null &&
+    typeof metadata.name === "string" &&
+    metadata.name.length > 0
+  );
 }

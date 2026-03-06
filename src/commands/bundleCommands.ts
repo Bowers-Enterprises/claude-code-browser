@@ -38,8 +38,18 @@ export function registerBundleCommands(
         }
       }
 
-      // Deduplicate
+      // Deduplicate and filter to folders that actually exist on disk
       skillFolders = [...new Set(skillFolders)];
+      const validFolders: string[] = [];
+      for (const folder of skillFolders) {
+        try {
+          await fs.access(folder);
+          validFolders.push(folder);
+        } catch {
+          // Folder doesn't exist (stale assignment) — skip it
+        }
+      }
+      skillFolders = validFolders;
 
       if (skillFolders.length === 0) {
         vscode.window.showErrorMessage('No skills found to export.');

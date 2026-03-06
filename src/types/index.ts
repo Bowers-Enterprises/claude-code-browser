@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * Scope of a resource - global (~/.claude) or project-specific
  */
-export type ResourceScope = 'global' | 'project';
+export type ResourceScope = "global" | "project";
 
 /**
  * Type of Claude Code resource
  */
-export type ResourceType = 'skill' | 'agent' | 'mcp' | 'plugin';
+export type ResourceType = "skill" | "agent" | "mcp" | "plugin";
 
 /**
  * Base interface for all resource tree items
@@ -37,6 +37,7 @@ export interface SkillMetadata {
   model?: string;
   allowedTools?: string[];
   filePath: string;
+  hasCompanionFiles: boolean;
 }
 
 /**
@@ -106,7 +107,7 @@ export interface FolderState {
 /**
  * Category for organizing Claude Code commands
  */
-export type CommandCategory = 'cli-flags' | 'slash-commands' | 'prompts';
+export type CommandCategory = "cli-flags" | "slash-commands" | "prompts";
 
 /**
  * Definition for a Claude Code command or prompt

@@ -11,3 +11,4 @@ export { registerSkillCommands, registerAgentCommands } from './skillCommands';
 export { registerMcpCommands } from './mcpCommands';
 export { registerResearchCommand } from './researchCommand';
 export { registerBundleCommands } from './bundleCommands';
+export { registerWorktreeCommands } from './worktreeCommands';
