@@ -13,6 +13,7 @@ import { promises as fs } from "fs";
 import { ResourceItem, ResourceScope, SkillMetadata } from "../types";
 import { parseSkillFile, isValidSkillMetadata } from "../parsers/skillParser";
 import { FolderManager } from "../services/folderManager";
+import { SkillUpdateService } from "../services/skillUpdateService";
 import { FolderItem, isFolderItem } from "./folderItem";
 import {
   SkillFileItem,
@@ -34,6 +35,7 @@ export class SkillItem extends vscode.TreeItem implements ResourceItem {
   public readonly resourceType = "skill" as const;
   public readonly itemType = "skill" as const;
   public readonly hasCompanionFiles: boolean;
+  public readonly updateAvailable: boolean;
 
   constructor(
     public readonly name: string,
@@ -42,6 +44,7 @@ export class SkillItem extends vscode.TreeItem implements ResourceItem {
     public readonly filePath: string,
     public readonly invokeCommand: string,
     hasCompanionFiles: boolean = false,
+    updateAvailable: boolean = false,
   ) {
     super(
       name,
@@ -50,9 +53,13 @@ export class SkillItem extends vscode.TreeItem implements ResourceItem {
         : vscode.TreeItemCollapsibleState.None,
     );
     this.hasCompanionFiles = hasCompanionFiles;
+    this.updateAvailable = updateAvailable;
 
-    // Set the description shown after the label (e.g., "(Global)")
-    this.description = scope === "global" ? "(Global)" : "(Project)";
+    // Set the description shown after the label
+    const scopeLabel = scope === "global" ? "(Global)" : "(Project)";
+    this.description = updateAvailable
+      ? `${scopeLabel} \u2191 Update available`
+      : scopeLabel;
 
     // Set tooltip to show full description
     this.tooltip = new vscode.MarkdownString();
@@ -62,15 +69,35 @@ export class SkillItem extends vscode.TreeItem implements ResourceItem {
     }
     this.tooltip.appendMarkdown(`*Scope:* ${scope}\n\n`);
     this.tooltip.appendMarkdown(`*Invoke:* \`${invokeCommand}\``);
+    if (updateAvailable) {
+      this.tooltip.appendMarkdown(
+        `\n\n---\n\n**Update available** — right-click to update`,
+      );
+    }
 
-    // Set icon based on scope
-    this.iconPath =
-      scope === "global"
-        ? new vscode.ThemeIcon("globe")
-        : new vscode.ThemeIcon("folder-opened");
+    // Set icon — show arrow-up overlay when update available
+    if (updateAvailable) {
+      this.iconPath = new vscode.ThemeIcon(
+        "cloud-upload",
+        new vscode.ThemeColor("notificationsWarningIcon.foreground"),
+      );
+    } else {
+      this.iconPath =
+        scope === "global"
+          ? new vscode.ThemeIcon("globe")
+          : new vscode.ThemeIcon("folder-opened");
+    }
 
-    // Set context value for menu contributions (different for project vs global)
-    this.contextValue = scope === "project" ? "skill-project" : "skill-global";
+    // Set context value for menu contributions
+    if (updateAvailable) {
+      this.contextValue =
+        scope === "project"
+          ? "skill-project-updatable"
+          : "skill-global-updatable";
+    } else {
+      this.contextValue =
+        scope === "project" ? "skill-project" : "skill-global";
+    }
 
     // Set command to invoke when clicked
     this.command = {
@@ -113,6 +140,7 @@ export class SkillsProvider
   private filterText: string = "";
   private treeView?: vscode.TreeView<SkillTreeItem>;
   private skills: SkillItem[] = [];
+  private updateService?: SkillUpdateService;
 
   constructor(private folderManager: FolderManager) {
     // Listen for folder changes
@@ -124,6 +152,14 @@ export class SkillsProvider
 
     // Load skills initially
     this.loadSkills();
+  }
+
+  /**
+   * Set the update service (called after construction to avoid circular deps)
+   */
+  setUpdateService(service: SkillUpdateService): void {
+    this.updateService = service;
+    service.onDidChange(() => this.refresh());
   }
 
   /**
@@ -520,6 +556,9 @@ export class SkillsProvider
     scope: ResourceScope,
   ): SkillItem {
     const invokeCommand = `/${metadata.name}`;
+    // Check update status from the service cache
+    const skillId = path.basename(path.dirname(metadata.filePath));
+    const hasUpdate = this.updateService?.hasUpdate(skillId) ?? false;
     return new SkillItem(
       metadata.name,
       metadata.description,
@@ -527,6 +566,7 @@ export class SkillsProvider
       metadata.filePath,
       invokeCommand,
       metadata.hasCompanionFiles,
+      hasUpdate,
     );
   }
 

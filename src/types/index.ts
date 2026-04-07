@@ -105,6 +105,45 @@ export interface FolderState {
 }
 
 /**
+ * Provenance info written to .source.json inside each skill directory.
+ * Tracks where a skill was installed from so we can check for updates.
+ */
+export interface SkillSourceInfo {
+  /** Installation source type */
+  source: "github" | "marketplace" | "npx" | "manual";
+  /** GitHub repo URL (e.g., "https://github.com/owner/repo") */
+  repo?: string;
+  /** Branch that was cloned */
+  branch?: string;
+  /** Subdirectory within the repo (for multi-skill repos) */
+  skillPath?: string;
+  /** ISO timestamp of installation */
+  installedAt: string;
+  /** SHA-256 hash of SKILL.md content at install time */
+  contentHash: string;
+  /** Marketplace source ID (from MarketplaceSourceManager) */
+  marketplaceSourceId?: string;
+}
+
+/**
+ * Update status for a single skill
+ */
+export interface SkillUpdateStatus {
+  /** Skill directory name */
+  skillId: string;
+  /** Whether an update is available */
+  hasUpdate: boolean;
+  /** Current local content hash */
+  localHash: string;
+  /** Remote content hash (if checked) */
+  remoteHash?: string;
+  /** When the check was performed */
+  checkedAt: string;
+  /** Error message if check failed */
+  error?: string;
+}
+
+/**
  * Category for organizing Claude Code commands
  */
 export type CommandCategory = "cli-flags" | "slash-commands" | "prompts";

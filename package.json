@@ -371,6 +371,25 @@
       {
         "command": "claudeCodeBrowser.openSkillFile",
         "title": "Open File"
+      },
+      {
+        "command": "claudeCodeBrowser.skills.checkForUpdates",
+        "title": "Check for Updates",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "claudeCodeBrowser.skills.updateSkill",
+        "title": "Update Skill",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "claudeCodeBrowser.skills.updateAll",
+        "title": "Update All Skills",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "claudeCodeBrowser.skills.backfillSources",
+        "title": "Backfill Skill Sources"
       }
     ],
     "menus": {
@@ -389,6 +408,21 @@
           "command": "claudeCodeBrowser.importBundle",
           "when": "view == claudeCodeBrowser.skills",
           "group": "import@1"
+        },
+        {
+          "command": "claudeCodeBrowser.skills.checkForUpdates",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "updates@1"
+        },
+        {
+          "command": "claudeCodeBrowser.skills.updateAll",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "updates@2"
+        },
+        {
+          "command": "claudeCodeBrowser.skills.backfillSources",
+          "when": "view == claudeCodeBrowser.skills",
+          "group": "updates@3"
         },
         {
           "command": "claudeCodeBrowser.createFolder",
@@ -509,47 +543,47 @@
         },
         {
           "command": "claudeCodeBrowser.previewSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "0_skill@1"
         },
         {
           "command": "claudeCodeBrowser.convertToGlobalSkill",
-          "when": "viewItem == skill-project",
+          "when": "viewItem == skill-project || viewItem == skill-project-updatable",
           "group": "0_skill@2"
         },
         {
           "command": "claudeCodeBrowser.editSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "0_skill@3"
         },
         {
           "command": "claudeCodeBrowser.duplicateSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "1_manage@1"
         },
         {
           "command": "claudeCodeBrowser.renameSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "1_manage@2"
         },
         {
           "command": "claudeCodeBrowser.revealInFinder",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "1_manage@3"
         },
         {
           "command": "claudeCodeBrowser.copyPath",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "1_manage@4"
         },
         {
           "command": "claudeCodeBrowser.exportBundle",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "1_manage@5"
         },
         {
           "command": "claudeCodeBrowser.deleteSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "3_destructive@1"
         },
         {
@@ -609,12 +643,12 @@
         },
         {
           "command": "claudeCodeBrowser.moveToFolder",
-          "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/ || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@1"
         },
         {
           "command": "claudeCodeBrowser.moveToRoot",
-          "when": "viewItem == skill-project || viewItem == skill-global || viewItem == agent || viewItem == mcp || viewItem == plugin",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/ || viewItem == agent || viewItem == mcp || viewItem == plugin",
           "group": "2_move@2"
         },
         {
@@ -659,8 +693,18 @@
         },
         {
           "command": "claudeCodeBrowser.previewSkill",
-          "when": "viewItem == skill-project || viewItem == skill-global",
+          "when": "viewItem =~ /^skill-(project|global)(-updatable)?$/",
           "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.skills.updateSkill",
+          "when": "viewItem == skill-global-updatable || viewItem == skill-project-updatable",
+          "group": "inline"
+        },
+        {
+          "command": "claudeCodeBrowser.skills.updateSkill",
+          "when": "viewItem == skill-global-updatable || viewItem == skill-project-updatable",
+          "group": "0_skill@0"
         },
         {
           "command": "claudeCodeBrowser.previewAgent",
